@@ -16,6 +16,8 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  await db.exec(`insert into auth.users values ('${a}'),('${b}'); set role authenticated;select set_config('request.jwt.claim.sub','${a}',false);`);
  await db.exec(`insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
  values('${a}','키움증권','domestic_etf','360750','테스트 ETF',0.00000001,123456789,'KRW',1.23456789);`);
+ await db.exec(`insert into portfolio_profiles(user_id,settings) values('${a}','{"dark":false,"interval":60,"colors":"kr","apiExpiry":{"date":"2028-10-11","enabled":true}}')`);
+ assert.equal((await db.query<{settings:{apiExpiry:{date:string}}}>('select settings from portfolio_profiles')).rows[0]?.settings.apiExpiry.date,'2028-10-11');
  const own=await db.query<{quantity:string}>('select quantity from portfolio_holdings_read');
  assert.equal(own.rows[0]?.quantity,'0.00000001');
  await assert.rejects(()=>db.exec(`update portfolio_holdings set user_id='${b}'`));
@@ -23,6 +25,7 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  await assert.rejects(()=>db.exec(`select portfolio_claim_quote('US:NVDA',60)`));
  await db.exec(`select set_config('request.jwt.claim.sub','${b}',false)`);
  assert.equal((await db.query('select * from portfolio_holdings_read')).rows.length,0);
+ assert.equal((await db.query('select * from portfolio_profiles')).rows.length,0);
  assert.equal((await db.query('delete from portfolio_holdings returning id')).rows.length,0);
  await db.exec('reset role;set role service_role;');
  const one=await db.query<{result:boolean}>(`select portfolio_claim_quote('US:NVDA',60) as result`);

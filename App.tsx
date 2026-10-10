@@ -9,9 +9,12 @@ import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cac
 import { ThemeContext, Theme, Button, Card, Label, Field, Choices, useTheme } from './src/ui';
 import { HoldingForm } from './src/HoldingForm';
 import { Analysis } from './src/Charts';
+import { ApiExpirySettings } from './src/ApiExpirySettings';
+import { defaultApiExpiry, daysRemaining, expiryLabel } from './src/apiExpiry';
+import { Notifications, cancelExpiryNotifications } from './src/expiryNotifications';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
 const dark={bg:'#101723',card:'#1B2536',text:'#F4F7FC',muted:'#A2AFC3',line:'#2C384E',accent:'#6488FF',gain:'#FF727C',loss:'#65A4FF'};
-const defaults:Settings={dark:false,interval:60,colors:'kr'};
+const defaults:Settings={dark:false,interval:60,colors:'kr',apiExpiry:defaultApiExpiry};
 function errorMessage(e:unknown){return e instanceof Error?e.message:'연결하지 못했습니다. 잠시 후 다시 시도하세요.';}
 function AuthScreen() {
   const [email,setEmail]=useState('');const [password,setPassword]=useState('');
@@ -53,6 +56,7 @@ function Detail({row,total,onEdit,onDelete,onClose}: {row:Valuation;total:Return
 function Portfolio({session}: {session:Session}) {
   const userId=session.user.id;
   const [settings,setSettings]=useState<Settings>(defaults);
+  const [settingsReady,setSettingsReady]=useState(false);
   const theme:Theme={...(settings.dark?dark:light),...(settings.colors==='global'?{gain:'#15AB82',loss:'#E44853'}:{})};
   const [tab,setTab]=useState('홈');const [holdings,setHoldings]=useState<Holding[]>([]);const [quotes,setQuotes]=useState<Record<string,Quote>>({});
   const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');const [ready,setReady]=useState(false);
@@ -82,7 +86,7 @@ function Portfolio({session}: {session:Session}) {
     void (async()=>{try{
       const [hs,qs]=await Promise.all([cachedHoldings(userId),readQuotes(userId)]);
       if(mounted.current){setHoldings(hs);setQuotes(qs);quoteRef.current=qs;}
-      try{const pref=await loadSettings(userId);if(pref&&mounted.current)setSettings(pref);}catch{/* default settings remain available */}
+      try{const pref=await loadSettings(userId);if(mounted.current){setSettings({...defaults,...pref,apiExpiry:pref?.apiExpiry??defaultApiExpiry});setSettingsReady(true);}}catch{if(mounted.current)setNotice('설정을 불러오지 못했습니다. 앱을 다시 열어주세요.');}
     }catch{/* corrupted cache does not prevent loading server state */}finally{if(mounted.current)void refresh();}})();
     return()=>{mounted.current=false;};
   },[refresh,userId]);
@@ -99,6 +103,14 @@ function Portfolio({session}: {session:Session}) {
     if(a.percent===null)return b.percent===null?0:1;if(b.percent===null)return -1;
     return sort==='low'?a.percent.cmp(b.percent):b.percent.cmp(a.percent);
   });
+  useEffect(()=>{
+    const open=(response:Notifications.NotificationResponse|null)=>{if(response?.notification.request.content.data?.kind==='api-expiry')setTab('설정');};
+    open(Notifications.getLastNotificationResponse());
+    const listener=Notifications.addNotificationResponseReceivedListener(open);
+    return()=>listener.remove();
+  },[]);
+  let expiryWarning='';
+  try{const date=settings.apiExpiry?.date;if(settingsReady&&date&&daysRemaining(date)<=30)expiryWarning='공공데이터 API: '+expiryLabel(date)+' ('+date+'). 설정에서 이용기간을 확인하세요.';}catch{/* malformed expiry is corrected in settings */}
   const detail=rows.find(r=>r.h.id===selected);
   function remove(h:Holding){
     Alert.alert('자산 삭제',h.name+'을 삭제할까요?',[{text:'취소',style:'cancel'},{text:'삭제',style:'destructive',onPress:()=>void(async()=>{try{await deleteHolding(h);setHoldings(prev=>prev.filter(item=>item.id!==h.id));setSelected(null);await refresh();}catch(e){Alert.alert('삭제 실패',errorMessage(e));}})()}]);
@@ -108,6 +120,7 @@ function Portfolio({session}: {session:Session}) {
     <ScrollView contentContainerStyle={{padding:18,gap:16,paddingBottom:30}} refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>void refresh()} tintColor={theme.accent}/>}>
       {!!notice&&<Card><Label size={13} color={theme.muted}>{notice}</Label><Button title="다시 조회" secondary disabled={busy} onPress={()=>void refresh()}/></Card>}
       {!ready&&!holdings.length&&<Label muted>자산을 불러오는 중입니다…</Label>}
+      {tab==='홈'&&!!expiryWarning&&<Card><Label bold>{expiryWarning}</Label><Button secondary title="API 만료일 설정 열기" onPress={()=>setTab('설정')}/></Card>}
       {tab==='홈'&&<>
         <Card style={{backgroundColor:theme.accent,borderColor:theme.accent}}><Label color="#DCE6FF">총 평가금액</Label><Label bold size={34} color="#FFFFFF">{money(total.value)}</Label>
           <View style={{flexDirection:'row',justifyContent:'space-between'}}><Label color="#DCE6FF">총 투자원금</Label><Label color="#FFFFFF">{money(total.cost)}</Label></View>
@@ -126,11 +139,12 @@ function Portfolio({session}: {session:Session}) {
         {ready&&!rows.length&&<Card><Label bold>첫 자산을 등록하세요</Label><Label muted>보유종목, 수량, 평균매입단가를 입력하면 투자 현황을 계산합니다.</Label></Card>}
         <Button title="+ 자산 추가" onPress={()=>setForm(true)}/>
       </>}
+      <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}}/>
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
         <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱이 화면에 표시될 때만 자동 갱신합니다. ETF와 기준환율은 일별 데이터이며 서버가 공급자별로 캐시합니다.</Label></Card>
-        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
+        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cancelExpiryNotifications(userId);await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
         <Card><Label bold>데이터 관리</Label><Button secondary title="기기 캐시 삭제" onPress={()=>void(async()=>{try{await clearCache(userId);setQuotes({});quoteRef.current={};setHoldings([]);await refresh();}catch(e){Alert.alert('오류',errorMessage(e));}})()}/><Label muted size={12}>서버에 저장된 자산은 유지됩니다. 자산 삭제는 상세화면에서 가능합니다.</Label></Card>
         <Label muted size={12}>수수료·세금·배당 제외. 미국주식은 USD, 국내주식·ETF와 업비트는 KRW 기준입니다. 계좌 자동연동은 지원하지 않습니다.</Label>
       </>}
@@ -142,11 +156,12 @@ function Portfolio({session}: {session:Session}) {
 }
 export default function App(){
   const [session,setSession]=useState<Session|null>(null);const [loading,setLoading]=useState(true);const [failure,setFailure]=useState('');
+  const authUser=useRef<string|null>(null);
   useEffect(()=>{
     if(!supabase){setLoading(false);return;}
     let alive=true;
-    void supabase.auth.getSession().then(({data,error})=>{if(alive){if(error)setFailure(error.message);setSession(data.session);setLoading(false);}}).catch(e=>{if(alive){setFailure(errorMessage(e));setLoading(false);}});
-    const {data}=supabase.auth.onAuthStateChange((_event,next)=>{if(alive)setSession(next);});
+    void supabase.auth.getSession().then(({data,error})=>{if(alive){if(error)setFailure(error.message);authUser.current=data.session?.user.id??null;setSession(data.session);setLoading(false);}}).catch(e=>{if(alive){setFailure(errorMessage(e));setLoading(false);}});
+    const {data}=supabase.auth.onAuthStateChange((_event,next)=>{if(alive){const previous=authUser.current;if(previous&&previous!==next?.user.id)void cancelExpiryNotifications(previous).catch(()=>{});authUser.current=next?.user.id??null;setSession(next);}});
     if(AppState.currentState==='active')supabase.auth.startAutoRefresh();
     const listener=AppState.addEventListener('change',state=>{if(state==='active')supabase!.auth.startAutoRefresh();else supabase!.auth.stopAutoRefresh();});
     return()=>{alive=false;data.subscription.unsubscribe();listener.remove();supabase!.auth.stopAutoRefresh();};

@@ -41,12 +41,14 @@ export async function getQuotes(): Promise<{ quotes: Record<string, Quote>; erro
 }
 export async function loadSettings(userId: string): Promise<Settings | null> {
   const { data, error } = await db().from('portfolio_profiles').select('settings').eq('user_id', userId).maybeSingle();
-  if (error) throw error;
+  if(error){const cached=await secureStorage.getItem('settings-'+userId);if(cached)return JSON.parse(cached) as Settings;throw error;}
+  if(data?.settings)await secureStorage.setItem('settings-'+userId,JSON.stringify(data.settings));
   return data?.settings ?? null;
 }
 export async function saveSettings(userId: string, settings: Settings) {
   const { error } = await db().from('portfolio_profiles').upsert({ user_id: userId, settings });
   if (error) throw error;
+  await secureStorage.setItem('settings-'+userId,JSON.stringify(settings));
 }
 export const cacheQuotes = (userId: string, quotes: Record<string, Quote>) => secureStorage.setItem('quotes-' + userId, JSON.stringify(quotes));
 export async function readQuotes(userId: string): Promise<Record<string, Quote>> {
@@ -55,5 +57,5 @@ export async function readQuotes(userId: string): Promise<Record<string, Quote>>
   return Object.fromEntries(Object.entries(JSON.parse(saved) as Record<string, Quote>).map(([k, q]) => [k, { ...q, stale: true }]));
 }
 export async function clearCache(userId: string) {
-  await secureStorage.removeItem('portfolio-' + userId); await secureStorage.removeItem('quotes-' + userId);
+  await secureStorage.removeItem('portfolio-' + userId); await secureStorage.removeItem('quotes-' + userId); await secureStorage.removeItem('settings-'+userId);
 }

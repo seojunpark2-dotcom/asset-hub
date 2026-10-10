@@ -2,7 +2,7 @@
 
 ## 완료한 검증
 - TypeScript: tsc --noEmit 통과.
-- 자동 테스트 14개 통과. 실제 PostgreSQL 엔진(PGlite)에서 스키마 실행 및 사용자 A/B/anon RLS, 문자열 numeric 읽기, 서버 전용 시세 쓰기/갱신 잠금/공급자 공용 할당량 검증.
+- 자동 테스트 20개 통과. 실제 PostgreSQL 엔진(PGlite)에서 스키마 실행 및 사용자 A/B/anon RLS, 문자열 numeric 읽기, 서버 전용 시세 쓰기/갱신 잠금/공급자 공용 할당량 검증.
 - 환차손익·소수점 BTC·원금 가중 수익률·시세 누락 처리·국내 ETF 종가 선택·API 실패 처리 검증.
 - Expo Doctor 21/21 통과, Deno Edge Function 타입 검사 통과, Android Hermes 번들 생성 성공.
 - Upbit KRW-BTC 및 Frankfurter USD/KRW 실 API 응답 확인.
@@ -37,3 +37,9 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 실제 사용자 서버 키로 AAPL 336.64 USD(2026-10-09), TIGER 미국S&P500(360750) 26,025 KRW(2026-10-07), USD/KRW 1341.99 기준환율 조회 성공. Upbit BTC 및 인증/RLS/CRUD 검증도 통과. 임시 계정과 자산 삭제 완료.
 - 키 Encoding/Decoding 자동 처리, 공급자 오류 코드만 표시하며 키/요청 URL/원문 응답은 노출하지 않도록 회귀 테스트 추가.
 - 서버 함수 재배포 완료. APK 재설치는 필요하지 않습니다. ETF는 거래일 다음 영업일 이후 제공되는 일별 종가이며 실시간 가격이 아닙니다.
+## 앱 1.1.0 API 이용기간 만료 알림
+- 날짜 유효성/윤년/한국시간 자정 경계, 30·7·1·0일 전 오전9시 예약, 지난 알림 제외, 중복 방지, 연장일 변경/계정 변경/권한 거부 시 예약 정리 테스트 통과.
+- 기존 설정 JSON에 만료일·알림 선호 저장 가능 및 계정 간 RLS 격리: PGlite와 실제 Supabase 임시 계정 검증 통과. 임시 계정 삭제 완료.
+- Expo Doctor 21/21, TypeScript, Android Hermes 번들 통과. expo-notifications 57.0.22 고정.
+- Android 알림 실제 수신·권한 UI·재부팅 복구·알림 클릭 이동은 실기기 미검증. 앱에 5초 테스트 알림 및 권한 설정 이동을 제공함.
+- 특별 exact alarm 권한은 추가하지 않으며, Android의 inexact alarm fallback을 사용하므로 절전 등으로 지연 가능.
