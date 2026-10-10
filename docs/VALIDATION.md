@@ -1,0 +1,22 @@
+# 검증 기록 · 2026-10-10
+
+## 완료한 검증
+- TypeScript: tsc --noEmit 통과.
+- 자동 테스트 12개 통과. 실제 PostgreSQL 엔진(PGlite)에서 스키마 실행 및 사용자 A/B/anon RLS, 문자열 numeric 읽기, 서버 전용 시세 쓰기/갱신 잠금/공급자 공용 할당량 검증.
+- 환차손익·소수점 BTC·원금 가중 수익률·시세 누락 처리·국내 ETF 종가 선택·API 실패 처리 검증.
+- Expo Doctor 21/21 통과, Deno Edge Function 타입 검사 통과, Android Hermes 번들 생성 성공.
+- Upbit KRW-BTC 및 Frankfurter USD/KRW 실 API 응답 확인.
+- asset-hub Supabase(싱가포르) 실제 마이그레이션 적용 및 portfolio-quotes 배포 완료.
+- 실서버에서 임시 계정 2개로 이메일/비밀번호 로그인, 자산 등록/문자열 정밀도 읽기/수정/삭제, 설정 저장, 계정 간 RLS 격리, 사용자 소유권 변경 차단 검증.
+- 실제 로그인 JWT로 Edge Function을 호출하여 업비트 가격 조회 성공. 익명 요청은 401로 거부. 로그아웃 확인. 테스트 계정 모두 삭제.
+- 서버 security advisors: 경고/오류 없음. portfolio_quote_locks/portfolio_provider_budgets의 RLS 정책 부재 안내(INFO) 2건은 의도한 클라이언트 접근 차단입니다. 테이블 권한과 RPC는 service_role에만 부여했습니다.
+- performance advisors: 알림 없음.
+- EAS Free 플랜 및 Android 무료 빌드 0/15회 확인 후 preview APK 빌드 시작.
+
+## 아직 확인하지 못한 항목
+- 사용자 API 키를 이용한 Finnhub 미국주식 및 data.go.kr 국내 ETF 실조회. 사용자는 API key 발급을 나중에 하고 APK/설정 안내를 먼저 받기로 선택했습니다.
+- Android 스마트폰에서 화면/접근성/실제 설치/재실행을 포함한 전체 사용자 흐름. 서버 테스트와 실기기 테스트는 다릅니다.
+- 공급자 가입 플랜의 개인용 화면 표시 권한과 계정별 무료 할당량.
+
+## 의존성 점검
+npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약점 알림이 남아 있습니다. 현재 조회된 최신 braces/node-forge에도 알림이 남아 있고, 자동 fix는 Expo/React Native를 오래된 major 버전으로 내리도록 제안하므로 적용하지 않았습니다. EAS CLI는 앱 의존성에서 제거하고 버전을 고정한 npx 명령으로 실행합니다. 업스트림 수정 버전을 확인해야 합니다.

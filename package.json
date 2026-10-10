@@ -1,0 +1,32 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "decimal.js": "10.6.0",
+    "expo": "57.0.27",
+    "expo-secure-store": "57.0.4",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "5.7.0",
+    "react-native-svg": "15.15.4",
+    "react-native-url-polyfill": "4.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "26.6.5",
+    "@types/react": "19.2.4",
+    "supabase": "2.120.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  },
+  "name": "asset-hub",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "build:apk": "npx eas-cli@24.12.1 build --platform android --profile preview"
+  }
+}

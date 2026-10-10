@@ -1,0 +1,39 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {PGlite} from '@electric-sql/pglite';
+test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
+ const db=new PGlite();
+ await db.exec(`
+ create role anon;create role authenticated;create role service_role bypassrls;
+ create schema auth;create table auth.users(id uuid primary key);
+ create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+ grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;
+ `);
+ const sql=await readFile(new URL('../supabase/migrations/20261010091417_portfolio_schema.sql',import.meta.url),'utf8');
+ await db.exec(sql);
+ const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
+ await db.exec(`insert into auth.users values ('${a}'),('${b}'); set role authenticated;select set_config('request.jwt.claim.sub','${a}',false);`);
+ await db.exec(`insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
+ values('${a}','키움증권','domestic_etf','360750','테스트 ETF',0.00000001,123456789,'KRW',1.23456789);`);
+ const own=await db.query<{quantity:string}>('select quantity from portfolio_holdings_read');
+ assert.equal(own.rows[0]?.quantity,'0.00000001');
+ await assert.rejects(()=>db.exec(`update portfolio_holdings set user_id='${b}'`));
+ await assert.rejects(()=>db.exec(`insert into portfolio_quote_cache values('BTC','UPBIT','KRW','100',now(),now(),'test',false)`));
+ await assert.rejects(()=>db.exec(`select portfolio_claim_quote('US:NVDA',60)`));
+ await db.exec(`select set_config('request.jwt.claim.sub','${b}',false)`);
+ assert.equal((await db.query('select * from portfolio_holdings_read')).rows.length,0);
+ assert.equal((await db.query('delete from portfolio_holdings returning id')).rows.length,0);
+ await db.exec('reset role;set role service_role;');
+ const one=await db.query<{result:boolean}>(`select portfolio_claim_quote('US:NVDA',60) as result`);
+ const two=await db.query<{result:boolean}>(`select portfolio_claim_quote('US:NVDA',60) as result`);
+ assert.equal(one.rows[0]?.result,true);assert.equal(two.rows[0]?.result,false);
+ const first=await db.query<{result:boolean}>(`select portfolio_claim_budget('US',1,60) as result`);
+ const blocked=await db.query<{result:boolean}>(`select portfolio_claim_budget('US',1,60) as result`);
+ assert.equal(first.rows[0]?.result,true);assert.equal(blocked.rows[0]?.result,false);
+ await db.exec(`update portfolio_provider_budgets set window_start=now()-interval '61 seconds' where provider='US'`);
+ assert.equal((await db.query<{result:boolean}>(`select portfolio_claim_budget('US',1,60) as result`)).rows[0]?.result,true);
+ await db.exec('reset role;set role anon;');
+ await assert.rejects(()=>db.query('select * from portfolio_holdings_read'));
+ await db.close();
+});
