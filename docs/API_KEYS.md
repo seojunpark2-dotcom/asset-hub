@@ -10,7 +10,7 @@
 ## 국내상장 ETF
 1. https://www.data.go.kr/data/15094806/openapi.do 에서 금융위원회 증권상품시세정보 활용신청을 합니다.
 2. ETF 시세 조회 서비스의 승인과 개발계정 호출 한도를 확인합니다.
-3. 일반 인증키 중 **디코딩된 키**를 사용합니다.
+3. 일반 인증키를 사용합니다. 서버는 Encoding/Decoding 형식과 앞뒤 공백을 자동 처리합니다.
 4. 국내 개별주식도 등록할 경우 https://www.data.go.kr/data/15094808/openapi.do 의 주식시세정보도 활용신청합니다.
 
 이 데이터는 한국 시장의 일별 종가입니다. 미국 지수를 추종하는 ETF도 한국 ETF 종가로 평가합니다. 실시간 가격이나 미국 기초지수 가격으로 표시하지 않습니다.
@@ -44,3 +44,8 @@ npx supabase secrets set --env-file supabase/functions/.env
 - Expo: https://expo.dev/accounts/seojunpark2/projects/asset-hub
 
 자산은 사용자의 계정에 저장되며, 시세 키와 증권사 보유계좌는 독립적입니다. 미래에셋/키움 계좌 비밀번호나 공동인증서를 제공하지 않습니다.
+
+## 인증키 오류 구분
+- `SERVICE_KEY_IS_NOT_REGISTERED_ERROR` (HTTP 403): 공급자가 전송된 키를 등록된 키로 인식하지 못한 상태입니다. 승인된 증권상품시세정보의 상세 화면에서 인증키 전체를 다시 복사해 Supabase Secrets 값을 갱신하고, 포털 자체 API 미리보기에서도 조회되는지 확인하세요. 승인·키 변경의 반영 지연 여부는 제공기관 확인이 필요합니다.
+- `SERVICE_ACCESS_DENIED_ERROR`: 해당 서비스의 활용신청과 접근 권한을 확인하세요.
+- 키나 키가 포함된 요청 URL을 채팅 또는 로그에 공유하지 마세요. 서버 오류에는 정해진 오류 코드와 HTTP 상태만 포함합니다.

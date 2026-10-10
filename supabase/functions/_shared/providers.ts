@@ -7,9 +7,17 @@ export interface Instrument { symbol: string; market: string; asset_type?: strin
 export interface Provider { supports(i: Instrument): boolean; ttl: number; get(i: Instrument): Promise<Quote>; }
 export type Secrets = (name: string) => string | undefined;
 export async function json(url: string, headers: Record<string,string> = {}) {
-  const response = await fetch(url, {headers,signal:AbortSignal.timeout(12000)});
-  if(!response.ok) throw new Error('공급자 응답 오류');
-  return await response.json();
+  let response: Response;
+  try { response = await fetch(url, {headers,signal:AbortSignal.timeout(12000)}); }
+  catch { throw new Error('공급자 연결 또는 응답시간 오류'); }
+  const body = await response.text();
+  // Only known gateway codes are exposed; never forward bodies or credential URLs.
+  const codes = ['SERVICE_KEY_IS_NOT_REGISTERED_ERROR','SERVICE_ACCESS_DENIED_ERROR','PERMISSION_DENIED','SERVICE_KEY_IS_NULL','LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR','NO_OPENAPI_SERVICE_ERROR','INVALID_REQUEST_PARAMETER_ERROR','SERVICETIMEOUT_ERROR'];
+  const code = codes.find(value => body.includes(value));
+  if(code) throw new Error('공급자 인증/요청 오류: '+code+' (HTTP '+response.status+')');
+  if(!response.ok) throw new Error('공급자 응답 오류 (HTTP '+response.status+')');
+  try { return JSON.parse(body); }
+  catch { throw new Error('공급자 응답 형식 오류 (HTTP '+response.status+')'); }
 }
 export function validPrice(value: unknown): string {
   const s=String(value);
@@ -42,7 +50,13 @@ export function providers(env: Secrets): Provider[] {
       return quote(i,data.c,new Date(data.t*1000).toISOString(),'Finnhub · 최근 거래가격',true,'USD');
     }},
     { supports:i=>i.market==='KR',ttl:3600,async get(i){
-      const key=env('DATA_GO_KR_SERVICE_KEY');
+      const storedKey=env('DATA_GO_KR_SERVICE_KEY');
+      let key=storedKey?.trim();
+      // Accept either portal representation; URLSearchParams applies encoding once.
+      if(key && /%[0-9a-f]{2}/i.test(key)){
+        try { key=decodeURIComponent(key); }
+        catch { throw new Error('국내 시세 인증키 형식을 확인하세요.'); }
+      }
       if(!key)throw new Error('국내 시세 공공데이터 키를 서버에 설정하세요.');
       const etf=i.asset_type==='domestic_etf';
       const service=etf?'GetSecuritiesProductInfoService/getETFPriceInfo':'GetStockPriceInfoService/getStockPriceInfo';
