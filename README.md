@@ -10,9 +10,9 @@
 - 샘플 잔고와 가짜 시세를 앱에 넣지 않습니다. 일부 종목의 시세가 없으면 전체 평가금액/수익률을 숨기고 확인된 평가금액을 별도로 표시합니다.
 
 ## APK 다운로드
-[EAS 설치/다운로드 화면](https://expo.dev/accounts/seojunpark2/projects/asset-hub/builds/9cc823bc-2b1f-4076-a3f3-25ffaa826a6b) · Android 7.0 이상 · 앱 1.1.0 · 약 74MB
+[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.1.0/asset-hub-1.1.0.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.1.0) · Android 7.0 이상 · 앱 1.1.0 · 약 74MB
 
-미국주식·국내 ETF 시세는 [서버 API 키 설정](docs/API_KEYS.md) 후 활성화됩니다.
+비공개 저장소이므로 다운로드하려면 접근 권한이 있는 GitHub 계정으로 로그인해야 합니다. 현재 APK는 EAS에서 빌드한 파일이며 GitHub에서 바로 배포합니다. 새 APK 생성 방식과 다운로드 호스팅은 별개입니다. 미국주식·국내 ETF 시세는 [서버 API 키 설정](docs/API_KEYS.md)을 사용합니다.
 
 ## 실행
 Node.js LTS를 설치한 뒤 작업 폴더에서:
