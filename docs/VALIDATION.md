@@ -20,3 +20,14 @@
 
 ## 의존성 점검
 npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약점 알림이 남아 있습니다. 현재 조회된 최신 braces/node-forge에도 알림이 남아 있고, 자동 fix는 Expo/React Native를 오래된 major 버전으로 내리도록 제안하므로 적용하지 않았습니다. EAS CLI는 앱 의존성에서 제거하고 버전을 고정한 npx 명령으로 실행합니다. 업스트림 수정 버전을 확인해야 합니다.
+
+## 최종 APK
+- EAS 빌드 성공: https://expo.dev/accounts/seojunpark2/projects/asset-hub/builds/a554cd65-3a34-4270-9d55-b4e8341bb34e
+- 파일: artifacts/asset-hub-1.0.0.apk (76,449,885 bytes)
+- 패키지: com.portfolio.assettracker, versionName 1.0.0, versionCode 2
+- Android 최소 버전: 7.0 (API 24), target API 36
+- ABI: arm64-v8a, armeabi-v7a, x86, x86_64
+- ZIP/DEX/manifest 구조와 APK 서명 블록 존재 확인. 인증서 체인/실제 설치 검증과 별개입니다.
+- 최종 권한: INTERNET, 내부 DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION. 카메라/마이크/외부 저장소/진동/생체인증 권한 없음.
+- SHA-256: 0F9AB12DFC4C6F79DCC3B2D220773A97A48E6FE7A0F731945B76D3FE085C042F
+- Windows 에뮬레이터 실행 시 가상화 드라이버 부재로 부팅 실패. 드라이버 설치 없는 소프트웨어 모드도 종료되어 UI/설치 실행 검증은 완료하지 못했습니다. 스마트폰 설치 안내를 참고하세요.
