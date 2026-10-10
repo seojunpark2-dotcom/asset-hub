@@ -43,3 +43,11 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - Expo Doctor 21/21, TypeScript, Android Hermes 번들 통과. expo-notifications 57.0.22 고정.
 - Android 알림 실제 수신·권한 UI·재부팅 복구·알림 클릭 이동은 실기기 미검증. 앱에 5초 테스트 알림 및 권한 설정 이동을 제공함.
 - 특별 exact alarm 권한은 추가하지 않으며, Android의 inexact alarm fallback을 사용하므로 절전 등으로 지연 가능.
+## 앱 1.1.0 APK 생성 확인
+- EAS 성공: https://expo.dev/accounts/seojunpark2/projects/asset-hub/builds/9cc823bc-2b1f-4076-a3f3-25ffaa826a6b
+- APK: https://expo.dev/artifacts/eas/sWsCZp5ADucsw9x5es5t-fZVcJ7m1H8Z9_JA_BJcOjU.apk
+- 로컬 artifacts/asset-hub-1.1.0.apk, 77,989,264 bytes, versionName 1.1.0/versionCode 3, min API24/target36.
+- 1.0.0과 1.1.0 APK의 v2 서명 인증서 SHA256 일치 확인. APK 서명 무결성 전체 검증 또는 실기기 업데이트 설치 테스트와 별개입니다.
+- POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED 포함 확인. 알림 라이브러리의 네트워크/깨우기/FCM 수신/런처 배지 관련 권한도 포함되어 있습니다. 앱에서 원격 푸시 토큰을 요청하거나 배지 표시를 활성화하지 않습니다.
+- 파일 SHA256: 8CD7CAB9E8A39D1CF337574C781C19143A93D10B65C65D621685112732B399F8.
+- 실제 휴대폰에서 알림 수신은 사용 안내의 5초 테스트 알림으로 확인해야 합니다.
