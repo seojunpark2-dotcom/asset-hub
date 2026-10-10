@@ -59,8 +59,8 @@ export function providers(env: Secrets): Provider[] {
       }
       if(!key)throw new Error('국내 시세 공공데이터 키를 서버에 설정하세요.');
       const etf=i.asset_type==='domestic_etf';
-      const service=etf?'GetSecuritiesProductInfoService/getETFPriceInfo':'GetStockPriceInfoService/getStockPriceInfo';
-      const url=new URL('https://apis.data.go.kr/1160100/service/'+service);
+      const service=etf?'GetSecuritiesProductInfoService_V2/getETFPriceInfo_V2':'GetStockSecuritiesInfoService_V2/getStockPriceInfo_V2';
+      const url=new URL('https://apis.data.go.kr/1160100/'+service);
       const since=new Date(Date.now()-30*86400000).toISOString().slice(0,10).replaceAll('-','');
       url.search=new URLSearchParams({serviceKey:key,resultType:'json',numOfRows:'100',pageNo:'1',beginBasDt:since,likeSrtnCd:i.symbol}).toString();
       const data=await json(url.toString());

@@ -14,7 +14,7 @@ test('missing US key returns explicit configuration failure',async()=>{
 });
 test('domestic ETF uses KRX ETF endpoint, selects exact symbol and latest close',async()=>{
  globalThis.fetch=async(url)=>{
-  assert.match(String(url),/GetSecuritiesProductInfoService\/getETFPriceInfo/);
+  assert.equal(new URL(String(url)).pathname,'/1160100/GetSecuritiesProductInfoService_V2/getETFPriceInfo_V2');
   return new Response(JSON.stringify({response:{header:{resultCode:'00'},body:{items:{item:[
    {srtnCd:'360750',clpr:'21000',basDt:'20261008'},{srtnCd:'360750',clpr:'22000',basDt:'20261009'},{srtnCd:'360751',clpr:'99999',basDt:'20261009'}
   ]}}}}));

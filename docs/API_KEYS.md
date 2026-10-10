@@ -49,3 +49,8 @@ npx supabase secrets set --env-file supabase/functions/.env
 - `SERVICE_KEY_IS_NOT_REGISTERED_ERROR` (HTTP 403): 공급자가 전송된 키를 등록된 키로 인식하지 못한 상태입니다. 승인된 증권상품시세정보의 상세 화면에서 인증키 전체를 다시 복사해 Supabase Secrets 값을 갱신하고, 포털 자체 API 미리보기에서도 조회되는지 확인하세요. 승인·키 변경의 반영 지연 여부는 제공기관 확인이 필요합니다.
 - `SERVICE_ACCESS_DENIED_ERROR`: 해당 서비스의 활용신청과 접근 권한을 확인하세요.
 - 키나 키가 포함된 요청 URL을 채팅 또는 로그에 공유하지 마세요. 서버 오류에는 정해진 오류 코드와 HTTP 상태만 포함합니다.
+## 현재 국내 API 주소 (2026-10-11 공식 명세 확인)
+- ETF: https://apis.data.go.kr/1160100/GetSecuritiesProductInfoService_V2/getETFPriceInfo_V2
+- 국내주식: https://apis.data.go.kr/1160100/GetStockSecuritiesInfoService_V2/getStockPriceInfo_V2
+- 공식 명세: https://www.data.go.kr/data/15094806/openapi.do 및 https://www.data.go.kr/data/15094808/openapi.do
+- 이전 API 주소를 사용하면 올바른 신규 인증키에도 등록되지 않은 키 오류가 발생할 수 있습니다. 이 앱은 V2 주소로 수정했으며 실제 ETF 조회를 확인했습니다.
