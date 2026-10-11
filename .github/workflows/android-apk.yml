@@ -25,6 +25,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        id: gradle-cache
         with:
           path: |
             ~/.gradle/caches
@@ -80,3 +81,11 @@ jobs:
         run: |
           gh release create "v$VERSION" "artifacts/asset-hub-$VERSION.apk" "artifacts/asset-hub-$VERSION.apk.sha256" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --notes-file docs/RELEASE_NOTES.md
           gh release view "v$VERSION" --json url,assets
+      - name: Save Android dependencies after checks
+        if: always() && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-gradle-${{ runner.os }}-${{ hashFiles('package-lock.json', 'modules/asset-expiry/android/build.gradle') }}

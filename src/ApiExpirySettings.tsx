@@ -18,7 +18,7 @@ export function ApiExpirySettings({userId,value,ready,visible,onSave,onAutomatic
    if(syncing||manualSaving.current)return;syncing=true;setNow(new Date());
    try{
     const result=await syncExpiryNotifications(userId,{date,enabled,lastNotifiedOn:value?.lastNotifiedOn,autoAdvancedFrom:value?.autoAdvancedFrom});
-    if(!alive)return;setDisplay(result.expiry);
+    if(!alive||manualSaving.current)return;setDisplay(result.expiry);
     setStatus(!enabled?'알림 꺼짐':!result.allowed?'휴대폰 알림 권한 또는 알림 채널이 꺼져 있습니다.':result.count?'만료 7일 전 알림 1개 예약됨':'예약할 알림이 없습니다. 만료일을 확인하세요.');
     if(result.expiry.date!==date||result.expiry.lastNotifiedOn!==value?.lastNotifiedOn||pendingAutomatic.current){
      pendingAutomatic.current=result.expiry;
