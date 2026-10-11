@@ -24,11 +24,11 @@
       "version": "1.2.1",
       "versionCode": 6,
       "description": "변경 종류에 따른 major.minor.patch 규칙 복원 및 표기 수정"
+    },
+    {
+      "version": "1.2.2",
+      "versionCode": 7,
+      "description": "만료일·알림 저장 버튼 제거, 날짜 선택과 알림 켜기·끄기 자동 저장"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.2.2",
-    "versionCode": 7
-  }
+  ]
 }

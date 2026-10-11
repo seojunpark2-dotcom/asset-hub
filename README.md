@@ -10,7 +10,7 @@
 - 샘플 잔고와 가짜 시세를 앱에 넣지 않습니다. 일부 종목의 시세가 없으면 전체 평가금액/수익률을 숨기고 확인된 평가금액을 별도로 표시합니다.
 
 ## APK 다운로드
-[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.2.2/%ED%86%B5%ED%95%A9%20%EC%9E%90%EC%82%B0%EA%B4%80%EB%A6%AC%20-%201.2.2.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.2.2) · Android 7.0 이상 · 앱 1.2.2 · ARM 32/64비트
+[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.2.2/asset-hub-1.2.2.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.2.2) · Android 7.0 이상 · 앱 1.2.2 · ARM 32/64비트
 
 비공개 저장소이므로 다운로드하려면 접근 권한이 있는 GitHub 계정으로 로그인해야 합니다. APK 생성과 배포는 GitHub Actions/Gradle 및 GitHub Releases를 사용합니다. 미국주식·국내 ETF 시세는 [서버 API 키 설정](docs/API_KEYS.md)을 사용합니다.
 

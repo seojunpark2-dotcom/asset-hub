@@ -79,3 +79,10 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK 내부 버전 1.2.1/code 6, 패키지 com.portfolio.assettracker, 기존 인증서 SHA256 일치, APK v2 서명 무결성 검증.
 - SHA256: 9ED9E199870D36DFEB1808538FBA14FA4335B816DB2B6849C0D3B79FD2D9B8F6 (GitHub asset digest 및 SHA256 파일 일치). GitHub latest=v1.2.1 확인.
 - 실제 휴대폰 설치·알림 수신은 이번 작업에서 확인하지 않음.
+
+## 앱 1.2.2 만료일·알림 자동 저장
+- 달력 확인 시 즉시 저장·알림 재예약, 취소 시 변경 없음. 켜기·끄기도 자동 저장. 저장 실패 시 선택 표시 복원, 예약 실패와 저장 실패 구분, 중복 저장 차단.
+- GitHub Actions run 38134732339: TypeScript, 앱 테스트, 네이티브 알림 테스트, APK 빌드·서명·해시·업로드 통과.
+- 다운로드 APK: 1.2.2/versionCode 7, 기존 패키지·인증서 일치 및 v2 서명 무결성 확인. SHA256 D666271F479B771E119069074A3D6524DE93B5E3C9B516CB5AC4ED486D0C8E67, 서버 digest 및 확인 파일 일치.
+- GitHub 한글 파일명 정규화 확인: APK 표시 이름은 한글, 실제 URL은 asset-hub-1.2.2.apk. ZIP 안에 요청한 한글 APK 파일명과 해당 SHA256 보존.
+- 실제 휴대폰에서의 날짜 선택·저장 동작은 이번 작업에서 직접 확인하지 않음.

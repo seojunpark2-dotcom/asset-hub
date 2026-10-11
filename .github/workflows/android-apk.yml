@@ -78,11 +78,15 @@ jobs:
           cd artifacts
           sha256sum "$APK_NAME" > "$APK_NAME.sha256"
           sha256sum --check "$APK_NAME.sha256"
+          # GitHub normalizes Korean/spaces in asset filenames; preserve them inside ZIP.
+          zip "asset-hub-$VERSION.zip" "$APK_NAME" "$APK_NAME.sha256"
+          cp "$APK_NAME" "asset-hub-$VERSION.apk"
+          sha256sum "asset-hub-$VERSION.apk" > "asset-hub-$VERSION.apk.sha256"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v$VERSION" "artifacts/$APK_NAME" "artifacts/$APK_NAME.sha256" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --latest --notes-file docs/RELEASE_NOTES.md
+          gh release create "v$VERSION" "artifacts/asset-hub-$VERSION.apk#$APK_NAME" "artifacts/asset-hub-$VERSION.apk.sha256#$APK_NAME.sha256" "artifacts/asset-hub-$VERSION.zip#통합 자산관리 - $VERSION (한글 APK 파일명 보존)" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --latest --notes-file docs/RELEASE_NOTES.md
           gh release view "v$VERSION" --json url,assets
       - name: Save Android dependencies after checks
         if: always() && steps.gradle-cache.outputs.cache-hit != 'true'
