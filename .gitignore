@@ -13,3 +13,4 @@ artifacts/
 
 /android/
 credentials.json
+modules/**/android/build/

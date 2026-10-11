@@ -5,7 +5,7 @@
 
 ```sh
 npx supabase login
-npx eas-cli@24.12.1 login
+gh auth login
 ```
 
 사용자가 asset-hub 프로젝트를 생성하고 CLI에 로그인했습니다. 연결된 프로젝트는 dznohmimroyfgopjiqki (싱가포르)입니다. 해당 전용 프로젝트에 SQL 마이그레이션과 portfolio-quotes 함수를 배포했으므로 같은 SQL을 다시 실행하지 마세요. 신규 환경에 설치할 때에만 아래 초기 설정을 진행합니다. 유료 플랜을 자동 신청하지 않습니다.
@@ -50,17 +50,14 @@ npm start
 ```
 실계정에서 가입/로그인 → 자산 5개 입력 → 재시작 → 수정/삭제 → 시세 조회 → 로그아웃/다른 계정 확인을 수행하세요. 주식 API key가 없으면 설정 필요 안내를 보여주며 전체 수익률은 계산하지 않습니다. 공급자별 실패는 해당 종목만 영향을 받습니다.
 
-## 6. EAS APK
-```sh
-npx eas-cli@24.12.1 init
-npx eas-cli@24.12.1 env:set --help
-```
-현재 CLI 도움말을 확인하고 preview 환경에 EXPO_PUBLIC_SUPABASE_URL과 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY를 설정하세요. 공개 클라이언트 환경변수만 등록합니다. EAS Build 무료 한도/잔여량을 확인하세요. 비용 발생이 안내되면 빌드를 중지하고 승인받으세요.
+## 6. GitHub Actions APK
+새 APK는 EAS 클라우드를 사용하지 않습니다. `.github/workflows/android-apk.yml`이 npm 검사 → Expo 네이티브 프로젝트 생성 → Android 알림 테스트 → Gradle release 빌드 → 서명/패키지/버전/해시 검증 → GitHub Releases 업로드를 실행합니다. ARM 32/64비트 Android를 지원합니다.
 
-```sh
-npm run build:apk
-```
-preview는 distribution=internal, android.buildType=apk입니다. Metro 서버 없이 실행되는 설치형 release APK를 생성합니다. EAS가 projectId와 서명키를 생성하면 설정을 저장합니다. 생성된 keystore는 Git에 커밋하지 않습니다. 빌드 성공 화면의 APK 다운로드 링크를 사용합니다.
+저장소 Actions Secrets에는 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`를 설정합니다. 기존 앱의 서명키를 유지해야 합니다. 비밀값은 코드·명령줄·로그에 남기지 않습니다. Repository Variables에는 공개 `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정합니다.
+
+`app.json`의 앱 버전과 Android versionCode 및 `package.json` 버전을 올리고 커밋·push합니다. GitHub Actions → Android APK → Run workflow 또는 `npm run build:apk`로 실행합니다. 같은 버전 릴리스가 이미 있으면 새 버전으로 올립니다. Secrets를 사용하는 릴리스 빌드는 수동 실행만 허용하며 PR에서는 실행하지 않습니다. `.env`, 생성된 `/android`, 다운로드한 서명 파일은 커밋하지 않습니다.
+
+기존 `eas.json`은 이전 설정으로 보관하며 새 APK 생성에 사용하지 않습니다.
 
 ## 7. Android 설치
 1. APK 파일을 스마트폰으로 다운로드합니다.

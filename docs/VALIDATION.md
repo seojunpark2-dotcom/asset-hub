@@ -50,4 +50,16 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 1.0.0과 1.1.0 APK의 v2 서명 인증서 SHA256 일치 확인. APK 서명 무결성 전체 검증 또는 실기기 업데이트 설치 테스트와 별개입니다.
 - POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED 포함 확인. 알림 라이브러리의 네트워크/깨우기/FCM 수신/런처 배지 관련 권한도 포함되어 있습니다. 앱에서 원격 푸시 토큰을 요청하거나 배지 표시를 활성화하지 않습니다.
 - 파일 SHA256: 8CD7CAB9E8A39D1CF337574C781C19143A93D10B65C65D621685112732B399F8.
-- 실제 휴대폰에서 알림 수신은 사용 안내의 5초 테스트 알림으로 확인해야 합니다.
+- 실제 휴대폰에서 알림 수신은 사용 안내의 5초 테스트 알림으로 확인해야 합니다.## 앱 1.2.0 달력 선택과 단일 알림
+- TypeScript 검사 및 앱/계산/시세/DB 격리 테스트 22개 통과.
+- GitHub Actions에서 Android 네이티브 알림 코드 및 테스트 코드 컴파일, JUnit/Robolectric 테스트 4개 통과.
+- 7일 전 한국시간 오전9시 단일 예약, 실제 알림일 기준 2년 뒤 날짜 계산과 윤년 처리, 중복 알림 방지, 권한 차단/알림 끄기 시 날짜 유지, 수동 날짜 선택 시 자동 변경 기록 초기화 확인.
+- JavaScript 동기화 중 알림이 발생해도 Android에 저장된 자동 변경 날짜를 보존하도록 처리. 설정 수동 저장 중 이전 동기화 결과를 UI에 적용하지 않음.
+- 이전 Expo 예약과 테스트 알림 제거, 별도 휴대폰 알림 설정 카드 및 Android 알림 설정 화면 이동 적용.
+- 이번 버전의 APK는 Expo EAS 클라우드가 아닌 GitHub Actions/Gradle로 생성. 기존 EAS 서명키는 사용자 명시적 승인 후 GitHub Actions Secrets로 이전했으며 다운로드한 로컬 키/credentials.json은 제거. 기존 EAS 원본은 유지.
+- 실제 휴대폰의 달력 UI, 알림 소리/절전/재부팅, 업데이트 설치는 실기기 검증과 별개임.
+- 최종 GitHub Actions 빌드 성공: https://github.com/seojunpark2-dotcom/asset-hub/actions/runs/38120088571
+- GitHub Release v1.2.0의 APK 및 SHA256 자산 업로드 상태 확인. 업로드된 APK를 다시 다운로드하여 GitHub asset digest·동봉 해시·로컬 SHA256 일치 확인.
+- 다운로드 APK: 42,401,455 bytes, com.portfolio.assettracker, versionName 1.2.0/versionCode 4, min API24/target36, ARM 32/64비트.
+- Android SDK apksigner로 다운로드 APK의 v2 서명 무결성 검증. 기존 1.1.0과 인증서 SHA256 일치 확인: 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada.
+- APK SHA256: FEA86F3D8748B196022420214D7FAA987C7646FF09E13EBA69F719106C7A25EC.
