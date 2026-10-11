@@ -115,3 +115,12 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 기존 인증서 SHA256 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada 일치, v2 서명 무결성 확인.
 - SHA256 B6B1540057EBFF1FD4291B49DCA6F5DFFCFBFF5CD8F6404E59489FC423FC4477: 다운로드·SHA256 파일·서버 digest 일치. ZIP 안의 통합 자산관리 - 1.3.0.apk 파일명과 동일 해시 확인.
 - GitHub 직접 APK 이름은 파일명 정규화 제한으로 asset-hub-1.3.0.apk이며 한글 이름은 ZIP 안에 보존. 실제 휴대폰 설치·런처 위젯 배치/스크롤/탭은 직접 확인하지 않음.
+
+## 앱 1.3.1 위젯 글자 정리
+- 위젯 제목·금융기관명·반영 시각·앱 열기/갱신 문구와 관련 native view 접근 제거. 위젯 루트·금액·목록 탭의 앱 열기 동작 유지.
+- 총평가금액 30sp, 전체 손익·수익률 20sp, 항목명 14sp, 종목명 16sp, 종목 수익률 18sp. 긴 요약 금액은 두 줄까지 표시.
+- TypeScript 및 앱 테스트 24개 통과. Android API 28/33 위젯 화면 검사에서 제목·날짜 안내 제거, 종목 행이 종목명·퍼센트만 포함하는 것을 확인. 기존 네이티브 알림 검사 통과.
+- GitHub Actions run 38141245108 APK 생성·서명·업로드 단계 통과. Latest v1.3.1, 태그 소스 c125df347b5a3b8be1fa4cfd88bb6404f3c51422 확인.
+- 다운로드 APK: 42,427,535 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.1/versionCode 11. 위젯 native 코드·리소스 포함 및 삭제한 제목/상태/금융기관 view ID가 APK resource table에서 제거됐음을 확인.
+- 기존 인증서 일치·v2 서명 확인. SHA256 C1AE4DF15F9F40DAA36CF55A1F22D04256CB2BF30D6732BCCBB999C2D10DD885는 다운로드·확인 파일·서버 digest와 일치.
+- 직접 파일명은 asset-hub-1.3.1.apk이며 ZIP에 통합 자산관리 - 1.3.1.apk 이름과 같은 해시를 보존. 실제 휴대폰에서의 배치와 글자 크기는 직접 확인하지 않음.
