@@ -98,7 +98,6 @@ function Portfolio({session}: {session:Session}) {
   async function updateSettings(next:Settings){setSettings(next);try{await saveSettings(userId,next);}catch(e){setNotice('설정 저장 실패: '+errorMessage(e));}}
   const rows=useMemo(()=>holdings.map(h=>valueHolding(h,quotes)),[holdings,quotes]);const total=summarize(rows);
   const ordered=[...rows].sort((a,b)=>{
-    if(sort==='name')return a.h.name.localeCompare(b.h.name,'ko');
     if(sort==='value')return (b.value?.toNumber()??-Infinity)-(a.value?.toNumber()??-Infinity);
     if(a.percent===null)return b.percent===null?0:1;if(b.percent===null)return -1;
     return sort==='low'?a.percent.cmp(b.percent):b.percent.cmp(a.percent);
@@ -137,7 +136,7 @@ function Portfolio({session}: {session:Session}) {
       </>}
       {(tab==='홈'||tab==='자산'||tab==='분석')&&<>
         {tab==='분석'&&<Analysis rows={rows}/>}
-        <Choices items={[{value:'value',label:'평가금액순'},{value:'high',label:'수익률 높은순'},{value:'low',label:'수익률 낮은순'},{value:'name',label:'종목명순'}]} value={sort} onChange={setSort}/>
+        <Choices items={[{value:'value',label:'평가금액순'},{value:'high',label:'수익률 높은순'},{value:'low',label:'수익률 낮은순'}]} value={sort} onChange={setSort}/>
         {ordered.map(row=><Row key={row.h.id} row={row} onPress={()=>setSelected(row.h.id)}/>)}
         {ready&&!rows.length&&<Card><Label bold>첫 자산을 등록하세요</Label><Label muted>보유종목, 수량, 평균매입단가를 입력하면 투자 현황을 계산합니다.</Label></Card>}
         <Button title="+ 자산 추가" onPress={()=>setForm(true)}/>

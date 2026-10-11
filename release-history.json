@@ -30,5 +30,10 @@
       "versionCode": 7,
       "description": "만료일·알림 저장 버튼 제거, 날짜 선택과 알림 켜기·끄기 자동 저장"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "patch",
+    "version": "1.2.3",
+    "versionCode": 8
+  }
 }
