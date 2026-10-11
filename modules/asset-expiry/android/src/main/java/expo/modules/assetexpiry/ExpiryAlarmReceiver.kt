@@ -36,9 +36,13 @@ object ExpiryAlarm {
   @Synchronized fun configure(context: Context, userId: String, date: String, enabled: Boolean, manual: Boolean): Int {
     ExpiryCalendar.reminderTime(date)
     val p = prefs(context)
-    val changed = manual || p.getString("userId", null) != userId || p.getString("date", null) != date
-    val edit = p.edit().putString("userId", userId).putString("date", date).putBoolean("enabled", enabled)
-    if (changed) edit.putString("configuredDate", date).remove("lastNotifiedOn").remove("autoAdvancedFrom")
+    // An alarm may fire between the JavaScript read and this configuration call.
+    val preserveRollover = !manual && p.getString("userId", null) == userId && p.contains("lastNotifiedOn") &&
+      (date == p.getString("configuredDate", null) || date == p.getString("autoAdvancedFrom", null))
+    val effectiveDate = if (preserveRollover) p.getString("date", date)!! else date
+    val changed = manual || p.getString("userId", null) != userId || p.getString("date", null) != effectiveDate
+    val edit = p.edit().putString("userId", userId).putString("date", effectiveDate).putBoolean("enabled", enabled)
+    if (changed) edit.putString("configuredDate", effectiveDate).remove("lastNotifiedOn").remove("autoAdvancedFrom")
     check(edit.commit())
     return schedule(context)
   }

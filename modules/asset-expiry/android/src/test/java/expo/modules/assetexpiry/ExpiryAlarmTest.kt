@@ -23,6 +23,8 @@ class ExpiryAlarmTest {
     assertEquals(ExpiryCalendar.nextDate(System.currentTimeMillis()), state["date"])
     assertEquals(ExpiryCalendar.day(System.currentTimeMillis()), state["lastNotifiedOn"])
     assertEquals("2020-01-01", state["autoAdvancedFrom"])
+    ExpiryAlarm.configure(context, "user", "2020-01-01", true, false)
+    assertEquals(state["date"], ExpiryAlarm.read(context, "user")!!["date"])
     val manager = shadowOf(context.getSystemService(NotificationManager::class.java))
     assertEquals(1, manager.size())
     manager.cancelAll()

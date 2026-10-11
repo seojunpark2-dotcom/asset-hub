@@ -23,7 +23,7 @@ export const syncExpiryNotifications=(userId:string,expiry:ApiExpiry,manual=fals
  for(const old of await Notifications.getAllScheduledNotificationsAsync())if(old.identifier.startsWith('api-expiry:')||old.identifier==='api-expiry-test')await Notifications.cancelScheduledNotificationAsync(old.identifier);
  const effective=manual?expiry:mergeAutomaticExpiry(expiry,await native.read(userId));
  const count=await native.configure(userId,effective.date,effective.enabled&&allowed,manual);
- return {allowed,count,expiry:effective};
+ return {allowed,count,expiry:manual?effective:mergeAutomaticExpiry(effective,await native.read(userId))};
 });
 export const cancelExpiryNotifications=(userId:string)=>serialize(async()=>{
  await native?.cancel(userId);
