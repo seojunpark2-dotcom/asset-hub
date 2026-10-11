@@ -1,11 +1,12 @@
 # Asset Hub 프로젝트 작업 지침
 
-## 앱 버전 (사용자 요청·확인: 2026-10-11)
-- APK 배포 기준으로 수정마다 마지막 숫자만 1 증가시킨다: 1.0.3 → 1.0.4 → 1.0.5. 중간 숫자는 올리지 않는다.
-- 이전 배포는 1.0.0=최초, 기존 1.1.0=새 순번 1.0.1, 기존 1.2.0=새 순번 1.0.2로 대응하며 이번 버전 정리는 1.0.3이다. 과거 APK 및 태그는 보존한다. docs/VERSIONS.md 참고.
-- 마지막 성공 배포를 release-history.json에 반영한 뒤 npm run version:bump로 앱/패키지/잠금 파일 버전과 Android versionCode를 함께 올린다. 내부 수정·테스트·재시도는 별도 배포로 세지 않는다.
+## 앱 버전 (사용자 최신 요청: 2026-10-11)
+- 마지막 숫자만 올리던 이전 규칙은 폐기한다. major.minor.patch를 변경 종류에 따라 사용한다.
+- major: 기존 사용 방식·데이터·연동과 호환되지 않는 큰 변경. minor: 호환되는 기능 추가. patch: 오류 수정 또는 기능 추가 없는 UI·문서·설정 정리. 여러 변경이 있으면 가장 높은 종류를 적용한다.
+- major를 올리면 중간·마지막을 0, minor를 올리면 마지막을 0으로 초기화한다. 단순한 디자인·개발 도구 변경만으로 major를 올리지 않는다.
+- 과거 실제 버전 1.0.0/1.1.0/1.2.0/1.0.3과 APK·태그를 보존한다. 현재 기능 기준 1.2.0에 이번 규칙 수정을 patch로 적용해 1.2.1/versionCode 6을 사용한다. docs/VERSIONS.md 참고.
+- 마지막 성공 배포를 release-history.json에 기록하고 plannedRelease를 제거한 뒤 npm run version:bump -- major|minor|patch로 앱/패키지/잠금 파일과 Android versionCode를 갱신한다. 변경 종류를 명시하며 내부 수정·테스트·재시도는 별도 버전으로 세지 않는다.
 - versionCode는 이전 설치본보다 반드시 증가시키고 기존 서명을 유지한다. 새 버전은 GitHub Release의 Latest로 명시한다.
-
 ## APK 빌드와 배포 (사용자 요청: 2026-10-11)
 - 앞으로 앱 수정 후 APK 생성에 Expo EAS 클라우드 빌드를 사용하지 않는다.
 - APK는 GitHub Actions 또는 로컬 Android 빌드 환경에서 생성하고 GitHub Releases에 업로드한다.
