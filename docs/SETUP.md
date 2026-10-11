@@ -55,7 +55,7 @@ npm start
 
 저장소 Actions Secrets에는 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`를 설정합니다. 기존 앱의 서명키를 유지해야 합니다. 비밀값은 코드·명령줄·로그에 남기지 않습니다. Repository Variables에는 공개 `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정합니다.
 
-`app.json`의 앱 버전과 Android versionCode 및 `package.json` 버전을 올리고 커밋·push합니다. GitHub Actions → Android APK → Run workflow 또는 `npm run build:apk`로 실행합니다. 같은 버전 릴리스가 이미 있으면 새 버전으로 올립니다. Secrets를 사용하는 릴리스 빌드는 수동 실행만 허용하며 PR에서는 실행하지 않습니다. `.env`, 생성된 `/android`, 다운로드한 서명 파일은 커밋하지 않습니다.
+성공한 마지막 APK를 `release-history.json`에 기록한 뒤 `npm run version:bump`로 마지막 버전 숫자와 Android versionCode를 1 증가시키고 커밋·push합니다. [버전 규칙](VERSIONS.md)을 참고하세요. GitHub Actions → Android APK → Run workflow 또는 `npm run build:apk`로 실행합니다. 같은 버전 릴리스가 이미 있으면 새 버전으로 올립니다. Secrets를 사용하는 릴리스 빌드는 수동 실행만 허용하며 PR에서는 실행하지 않습니다. `.env`, 생성된 `/android`, 다운로드한 서명 파일은 커밋하지 않습니다.
 
 기존 `eas.json`은 이전 설정으로 보관하며 새 APK 생성에 사용하지 않습니다.
 

@@ -1,5 +1,11 @@
 # Asset Hub 프로젝트 작업 지침
 
+## 앱 버전 (사용자 요청·확인: 2026-10-11)
+- APK 배포 기준으로 수정마다 마지막 숫자만 1 증가시킨다: 1.0.3 → 1.0.4 → 1.0.5. 중간 숫자는 올리지 않는다.
+- 이전 배포는 1.0.0=최초, 기존 1.1.0=새 순번 1.0.1, 기존 1.2.0=새 순번 1.0.2로 대응하며 이번 버전 정리는 1.0.3이다. 과거 APK 및 태그는 보존한다. docs/VERSIONS.md 참고.
+- 마지막 성공 배포를 release-history.json에 반영한 뒤 npm run version:bump로 앱/패키지/잠금 파일 버전과 Android versionCode를 함께 올린다. 내부 수정·테스트·재시도는 별도 배포로 세지 않는다.
+- versionCode는 이전 설치본보다 반드시 증가시키고 기존 서명을 유지한다. 새 버전은 GitHub Release의 Latest로 명시한다.
+
 ## APK 빌드와 배포 (사용자 요청: 2026-10-11)
 - 앞으로 앱 수정 후 APK 생성에 Expo EAS 클라우드 빌드를 사용하지 않는다.
 - APK는 GitHub Actions 또는 로컬 Android 빌드 환경에서 생성하고 GitHub Releases에 업로드한다.

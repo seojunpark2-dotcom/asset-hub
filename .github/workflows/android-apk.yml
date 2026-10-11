@@ -34,6 +34,7 @@ jobs:
           restore-keys: android-gradle-${{ runner.os }}-
       - name: Validate version and public configuration
         run: |
+          npm run version:check
           node -e 'const c=require("./app.json").expo,p=require("./package.json");if(c.version!==p.version||!/^\d+\.\d+\.\d+$/.test(c.version)||!process.env.EXPO_PUBLIC_SUPABASE_URL||!process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY)throw Error("Invalid version or missing public Supabase configuration");'
           echo "VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
       - run: npm ci
@@ -79,7 +80,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v$VERSION" "artifacts/asset-hub-$VERSION.apk" "artifacts/asset-hub-$VERSION.apk.sha256" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --notes-file docs/RELEASE_NOTES.md
+          gh release create "v$VERSION" "artifacts/asset-hub-$VERSION.apk" "artifacts/asset-hub-$VERSION.apk.sha256" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --latest --notes-file docs/RELEASE_NOTES.md
           gh release view "v$VERSION" --json url,assets
       - name: Save Android dependencies after checks
         if: always() && steps.gradle-cache.outputs.cache-hit != 'true'

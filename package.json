@@ -21,7 +21,7 @@
     "typescript": "6.0.3"
   },
   "name": "asset-hub",
-  "version": "1.2.0",
+  "version": "1.0.3",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -29,6 +29,8 @@
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "build:apk": "gh workflow run android-apk.yml"
+    "build:apk": "gh workflow run android-apk.yml",
+    "version:bump": "node scripts/version.cjs bump",
+    "version:check": "node scripts/version.cjs check"
   }
 }
