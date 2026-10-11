@@ -25,5 +25,10 @@
       "versionCode": 6,
       "description": "변경 종류에 따른 major.minor.patch 규칙 복원 및 표기 수정"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "patch",
+    "version": "1.2.2",
+    "versionCode": 7
+  }
 }
