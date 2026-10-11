@@ -63,3 +63,10 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 42,401,455 bytes, com.portfolio.assettracker, versionName 1.2.0/versionCode 4, min API24/target36, ARM 32/64비트.
 - Android SDK apksigner로 다운로드 APK의 v2 서명 무결성 검증. 기존 1.1.0과 인증서 SHA256 일치 확인: 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada.
 - APK SHA256: FEA86F3D8748B196022420214D7FAA987C7646FF09E13EBA69F719106C7A25EC.
+
+## 앱 1.0.3 버전 순번 정리
+- 사용자 확인에 따라 APK 배포 기준: 기존 1.0.0 → 1.0.0, 1.1.0 → 1.0.1, 1.2.0 → 1.0.2. 현재 1.0.3/versionCode 5. 과거 파일과 태그를 보존하고 대응표 기록.
+- GitHub Actions 성공: https://github.com/seojunpark2-dotcom/asset-hub/actions/runs/38129434365
+- 새 APK 및 SHA256 업로드 완료, GitHub latest가 v1.0.3인지 확인. 다운로드 APK 내부 버전 1.0.3/code 5 및 기존 인증서 서명 무결성 검증.
+- APK 42,401,451 bytes. 다운로드 SHA256/동봉 파일/GitHub asset digest 일치: 034CD82CE1D6CA552D917631363FC14AEDE0261A8E2FA42984D4058324DF1B4E.
+- 별도 복사본에서 다음 버전 1.0.4/code 6, 반복 bump의 동일 결과, 이미 배포한 1.0.3 재사용 차단을 검증. 실제 앱 설정은 1.0.3 유지.

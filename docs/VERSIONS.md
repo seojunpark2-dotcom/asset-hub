@@ -16,4 +16,4 @@
 2. `npm run version:bump`를 실행합니다. app.json/package.json/package-lock.json을 맞추고 Android versionCode도 1 증가시킵니다. 같은 배포 준비 중 반복 실행해도 추가로 증가하지 않습니다.
 3. 수정·검사 후 `npm run version:check`와 GitHub APK 빌드를 실행합니다. 빌드에서는 이 규칙을 자동 검사합니다.
 
-현재 1.0.3 APK 생성 시 이력에는 마지막 성공 배포 1.0.2까지 포함합니다. 1.0.3의 업로드가 성공하면 다음 작업에서 이력에 추가한 뒤 1.0.4로 올립니다.
+1.0.3 업로드와 다운로드 검증을 완료했으며 이력에 기록했습니다. 다음 수정에서 npm run version:bump를 실행하면 1.0.4와 Android versionCode 6으로 증가합니다. 이미 배포한 버전의 재사용은 빌드 전에 차단합니다.

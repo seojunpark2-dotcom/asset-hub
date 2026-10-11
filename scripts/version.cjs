@@ -13,7 +13,11 @@ if (process.argv[2] === 'bump') {
     fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
   }
 }
-if (app.expo.version !== expected || pkg.version !== expected || lock.version !== expected || lock.packages[''].version !== expected || app.expo.android.versionCode !== versionCode) {
+// A completed release stays valid in the checkout; another APK must use the next number.
+const published = process.argv[2] !== 'release' && pkg.version === previous.version;
+const checkedVersion = published ? previous.version : expected;
+const checkedCode = published ? previous.versionCode : versionCode;
+if (app.expo.version !== checkedVersion || pkg.version !== checkedVersion || lock.version !== checkedVersion || lock.packages[''].version !== checkedVersion || app.expo.android.versionCode !== checkedCode) {
   throw new Error(`Next APK must be ${expected}, Android versionCode ${versionCode}. Run npm run version:bump.`);
 }
-console.log(`Version verified: ${expected}, Android versionCode ${versionCode}`);
+console.log(`Version verified: ${checkedVersion}, Android versionCode ${checkedCode}`);
