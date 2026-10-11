@@ -11,5 +11,5 @@ dist/
 supabase/.temp/
 artifacts/
 
-android/
+/android/
 credentials.json
