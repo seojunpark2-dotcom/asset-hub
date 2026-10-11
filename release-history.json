@@ -135,11 +135,33 @@
         "Korean filename preserved in ZIP; GitHub asset filename normalized"
       ],
       "deviceVerification": "not performed"
+    },
+    {
+      "version": "1.3.2",
+      "changeType": "patch",
+      "versionCode": 12,
+      "description": "위젯 전체 평가손익 왼쪽·전체 수익률 오른쪽 분리 배치, 최소 20dp 간격",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "9e703fc0420628df6b3c94affff95a5a5c7f9b62",
+      "tag": "v1.3.2",
+      "releasedAt": "2026-10-11",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.3.2.apk",
+      "requestedApkName": "통합 자산관리 - 1.3.2.apk",
+      "sha256": "0040eadfa3cc06a8e7411129d6437387eba291b5f9b9dc1ea4ba6a5b7ee2392f",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.3.2",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.3.2/asset-hub-1.3.2.apk",
+      "checks": [
+        "TypeScript and application tests passed",
+        "Android 28/33 widget tests verified left/right positions and gap at 240dp and 400dp widths",
+        "Downloaded APK metadata, widget native code and separate return view resources verified",
+        "Existing signing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest",
+        "Latest and source commit tag verified",
+        "Korean filename preserved in ZIP; GitHub asset filename normalized"
+      ],
+      "deviceVerification": "not performed"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.3.2",
-    "versionCode": 12
-  }
+  ]
 }

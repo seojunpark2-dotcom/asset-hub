@@ -124,3 +124,11 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 42,427,535 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.1/versionCode 11. 위젯 native 코드·리소스 포함 및 삭제한 제목/상태/금융기관 view ID가 APK resource table에서 제거됐음을 확인.
 - 기존 인증서 일치·v2 서명 확인. SHA256 C1AE4DF15F9F40DAA36CF55A1F22D04256CB2BF30D6732BCCBB999C2D10DD885는 다운로드·확인 파일·서버 digest와 일치.
 - 직접 파일명은 asset-hub-1.3.1.apk이며 ZIP에 통합 자산관리 - 1.3.1.apk 이름과 같은 해시를 보존. 실제 휴대폰에서의 배치와 글자 크기는 직접 확인하지 않음.
+
+## 앱 1.3.2 위젯 평가손익·수익률 좌우 배치
+- 평가손익 금액과 전체 수익률을 별도 TextView로 분리하고 왼쪽/오른쪽 끝에 배치, 최소 20dp 간격. 항목명도 각 값 위에 정렬. 기존 20sp·색상·클릭 동작 유지.
+- GitHub 타입·앱 검사 및 Android API 28/33 네이티브 검사 통과. 240dp/400dp 화면 폭에서 왼쪽 금액, 오른쪽 끝의 퍼센트, 최소 간격을 측정 검증. 기존 만료 알림 검사 통과.
+- GitHub Actions run 38142658142 최종 success. 상태 조회의 일시적인 네트워크 오류 후 재조회로 성공 확인. Latest v1.3.2 및 태그 소스 9e703fc0420628df6b3c94affff95a5a5c7f9b62 일치.
+- 다운로드 APK: 42,427,743 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.2/versionCode 12. 네이티브 위젯 코드와 분리된 수익률 칸 리소스 포함 확인.
+- 기존 인증서 일치·v2 서명 확인. SHA256 0040EADFA3CC06A8E7411129D6437387EBA291B5F9B9DC1EA4BA6A5B7EE2392F는 다운로드·확인 파일·GitHub digest와 일치.
+- 직접 APK 이름은 asset-hub-1.3.2.apk이며 ZIP 안의 통합 자산관리 - 1.3.2.apk 이름과 동일 해시 확인. 실제 휴대폰 화면은 직접 확인하지 않음.
