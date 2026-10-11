@@ -104,3 +104,14 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 앱 이름 통합 자산관리, 패키지 com.portfolio.assettracker, 1.2.4/versionCode 9, 기존 인증서 일치와 v2 서명 확인.
 - SHA256 2D3D1C5EC3442FAFC616860159C033DF8F6013839A710F3494317F87FCCD75D0: 다운로드·확인 파일·서버 digest 일치. ZIP 안의 통합 자산관리 - 1.2.4.apk 파일명과 동일 해시 확인.
 - GitHub 파일명 정규화로 직접 APK 이름은 asset-hub-1.2.4.apk. 한글 이름은 ZIP에서 보존. 실기기 차트·탭 화면은 이번 작업에서 직접 확인하지 않음.
+
+## 앱 1.3.0 보유자산 위젯
+- 홈 금융기관을 Decimal 원화 평가금액 내림차순으로 정렬하고, 시세 누락 기관은 마지막에 표시.
+- 위젯은 총평가금액·전체 평가손익 금액과 수익률·각 보유종목 이름과 수익률을 표시. 원금과 종목별 금액은 저장 payload에서도 제외. 전체 수익률은 투자원금으로 가중 계산.
+- TypeScript 및 앱 테스트 24개 통과. Android API 28/33 Robolectric에서 네이티브 위젯 저장·계정 전환·로그아웃 삭제·화면 구성 검증, 기존 만료 알림 테스트 통과.
+- 위젯은 앱이 마지막으로 반영한 데이터와 시간을 표시하며, 앱 시세 조회 시 갱신. 탭으로 앱을 열어 갱신. 앱 종료 중 독립적인 실시간/주기적 시세 조회는 구현하지 않음.
+- GitHub Actions run 38139184197 성공. Latest v1.3.0과 태그 소스 454f3b1d11ae60f40b418c4651e52ee7d495ad9f 일치.
+- 다운로드 APK: 42,427,815 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.0/versionCode 10. 위젯 receiver/service manifest, 네이티브 DEX 및 resource table의 위젯 XML·레이아웃 포함 확인.
+- 기존 인증서 SHA256 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada 일치, v2 서명 무결성 확인.
+- SHA256 B6B1540057EBFF1FD4291B49DCA6F5DFFCFBFF5CD8F6404E59489FC423FC4477: 다운로드·SHA256 파일·서버 digest 일치. ZIP 안의 통합 자산관리 - 1.3.0.apk 파일명과 동일 해시 확인.
+- GitHub 직접 APK 이름은 파일명 정규화 제한으로 asset-hub-1.3.0.apk이며 한글 이름은 ZIP 안에 보존. 실제 휴대폰 설치·런처 위젯 배치/스크롤/탭은 직접 확인하지 않음.
