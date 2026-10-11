@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Modal, Pressable, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Linking, Modal, Pressable, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { Session } from '@supabase/supabase-js';
 import { configured, supabase } from './src/supabase';
 import { Holding, Quote, Settings, assetLabels, marketOf, quoteKey } from './src/types';
 import { valueHolding, summarize, money, pct, signedMoney, Valuation } from './src/finance';
-import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, clearCache } from './src/portfolio';
+import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, cacheSettings, clearCache } from './src/portfolio';
 import { ThemeContext, Theme, Button, Card, Label, Field, Choices, useTheme } from './src/ui';
 import { HoldingForm } from './src/HoldingForm';
 import { Analysis } from './src/Charts';
-import { ApiExpirySettings } from './src/ApiExpirySettings';
+import { ApiExpirySettings, NotificationSettings } from './src/ApiExpirySettings';
 import { defaultApiExpiry, daysRemaining, expiryLabel } from './src/apiExpiry';
 import { Notifications, cancelExpiryNotifications } from './src/expiryNotifications';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
@@ -107,7 +107,10 @@ function Portfolio({session}: {session:Session}) {
     const open=(response:Notifications.NotificationResponse|null)=>{if(response?.notification.request.content.data?.kind==='api-expiry')setTab('설정');};
     open(Notifications.getLastNotificationResponse());
     const listener=Notifications.addNotificationResponseReceivedListener(open);
-    return()=>listener.remove();
+    const openUrl=(url:string|null)=>{if(url?.startsWith('assethub://expiry'))setTab('설정');};
+    void Linking.getInitialURL().then(openUrl);
+    const link=Linking.addEventListener('url',event=>openUrl(event.url));
+    return()=>{listener.remove();link.remove();};
   },[]);
   let expiryWarning='';
   try{const date=settings.apiExpiry?.date;if(settingsReady&&date&&daysRemaining(date)<=30)expiryWarning='공공데이터 API: '+expiryLabel(date)+' ('+date+'). 설정에서 이용기간을 확인하세요.';}catch{/* malformed expiry is corrected in settings */}
@@ -139,11 +142,12 @@ function Portfolio({session}: {session:Session}) {
         {ready&&!rows.length&&<Card><Label bold>첫 자산을 등록하세요</Label><Label muted>보유종목, 수량, 평균매입단가를 입력하면 투자 현황을 계산합니다.</Label></Card>}
         <Button title="+ 자산 추가" onPress={()=>setForm(true)}/>
       </>}
-      <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}}/>
+      <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}} onAutomatic={async apiExpiry=>{const next={...settings,apiExpiry};setSettings(next);await cacheSettings(userId,next);await saveSettings(userId,next);}}/>
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
         <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱이 화면에 표시될 때만 자동 갱신합니다. ETF와 기준환율은 일별 데이터이며 서버가 공급자별로 캐시합니다.</Label></Card>
+        <NotificationSettings/>
         <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cancelExpiryNotifications(userId);await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
         <Card><Label bold>데이터 관리</Label><Button secondary title="기기 캐시 삭제" onPress={()=>void(async()=>{try{await clearCache(userId);setQuotes({});quoteRef.current={};setHoldings([]);await refresh();}catch(e){Alert.alert('오류',errorMessage(e));}})()}/><Label muted size={12}>서버에 저장된 자산은 유지됩니다. 자산 삭제는 상세화면에서 가능합니다.</Label></Card>
         <Label muted size={12}>수수료·세금·배당 제외. 미국주식은 USD, 국내주식·ETF와 업비트는 KRW 기준입니다. 계좌 자동연동은 지원하지 않습니다.</Label>

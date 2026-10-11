@@ -1,4 +1,4 @@
-export interface ApiExpiry { date: string; enabled: boolean; }
+export interface ApiExpiry { date: string; enabled: boolean; lastNotifiedOn?:string; autoAdvancedFrom?:string; }
 export const defaultApiExpiry: ApiExpiry = {date:'2028-10-11',enabled:false};
 const DAY=86400000;
 export function expiryDate(value:string):string {
@@ -24,7 +24,7 @@ export function expiryReminders(userId:string,expiry:ApiExpiry,now=new Date()):E
  const date=expiryDate(expiry.date);
  // 09:00 Korea time is 00:00 UTC, regardless of the phone timezone.
  const expiryMorning=Date.parse(date+'T00:00:00Z');
- return [30,7,1,0].map(days=>({id:'api-expiry:'+userId+':'+date+':'+days,date:new Date(expiryMorning-days*DAY),days,
+ return [7].map(days=>({id:'api-expiry:'+userId+':'+date+':'+days,date:new Date(expiryMorning-days*DAY),days,
   title:days===0?'공공데이터 API 이용기간 만료일입니다':'공공데이터 API 만료 '+days+'일 전',
   body:'국내 ETF 시세 API 만료예정일: '+date+'. 공공데이터포털에서 이용기간을 확인하고 연장하세요.'
  })).filter(item=>item.date.getTime()>now.getTime());
@@ -42,4 +42,15 @@ export async function reconcileReminders(adapter:ReminderAdapter,userId:string,e
  for(const item of current)if(item.identifier.startsWith('api-expiry:')&&!desiredIds.has(item.identifier))await adapter.cancel(item.identifier);
  for(const item of desired)if(!existing.has(item.id))await adapter.schedule(item);
  return desired.length;
+}
+export interface NativeExpiryState {date:string;configuredDate:string;lastNotifiedOn?:string|null;autoAdvancedFrom?:string|null;}
+export function mergeAutomaticExpiry(value:ApiExpiry,state:NativeExpiryState|null):ApiExpiry {
+ if(!state?.lastNotifiedOn||!state.autoAdvancedFrom)return value;
+ if(value.date!==state.configuredDate&&value.date!==state.date&&value.date!==state.autoAdvancedFrom&&value.lastNotifiedOn!==state.lastNotifiedOn)return value;
+ return {...value,date:expiryDate(state.date),lastNotifiedOn:state.lastNotifiedOn,autoAdvancedFrom:state.autoAdvancedFrom};
+}
+export function twoYearsAfter(day:string):string {
+ const date=expiryDate(day);const [year,month,dayOfMonth]=date.split('-').map(Number) as [number,number,number];
+ const nextYear=year+2;const lastDay=new Date(Date.UTC(nextYear,month,0)).getUTCDate();
+ return expiryDate(`${nextYear}-${String(month).padStart(2,'0')}-${String(Math.min(dayOfMonth,lastDay)).padStart(2,'0')}`);
 }

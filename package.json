@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@react-native-community/datetimepicker": "9.1.0",
     "@supabase/supabase-js": "2.117.3",
     "decimal.js": "10.6.0",
     "expo": "57.0.27",
@@ -20,14 +21,14 @@
     "typescript": "6.0.3"
   },
   "name": "asset-hub",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "build:apk": "npx eas-cli@24.12.1 build --platform android --profile preview"
+    "build:apk": "gh workflow run android-apk.yml"
   }
 }

@@ -1,0 +1,75 @@
+name: Android APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CI: '1'
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Validate version and public configuration
+        run: |
+          node -e 'const c=require("./app.json").expo,p=require("./package.json");if(c.version!==p.version||!/^\d+\.\d+\.\d+$/.test(c.version)||!process.env.EXPO_PUBLIC_SUPABASE_URL||!process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY)throw Error("Invalid version or missing public Supabase configuration");'
+          echo "VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: TypeScript and application tests
+        run: |
+          npm run typecheck
+          npm test
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
+      - name: Native notification tests
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew :asset-expiry:testDebugUnitTest --no-daemon --max-workers=2
+      - name: Build signed APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/asset-hub.jks"
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          chmod 600 "$ANDROID_KEYSTORE_PATH"
+          node scripts/configure-android-signing.cjs
+          cd android
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+      - name: Verify APK identity, signature and hash
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/release/app-release.apk "artifacts/asset-hub-$VERSION.apk"
+          node scripts/inspect-apk.cjs "artifacts/asset-hub-$VERSION.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "artifacts/asset-hub-$VERSION.apk" > "$RUNNER_TEMP/certificate.txt"
+          grep -qi '57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada' "$RUNNER_TEMP/certificate.txt"
+          cat "$RUNNER_TEMP/certificate.txt"
+          cd artifacts
+          sha256sum "asset-hub-$VERSION.apk" > "asset-hub-$VERSION.apk.sha256"
+          sha256sum --check "asset-hub-$VERSION.apk.sha256"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION" "artifacts/asset-hub-$VERSION.apk" "artifacts/asset-hub-$VERSION.apk.sha256" --target "$GITHUB_SHA" --title "Asset Hub $VERSION" --notes-file docs/RELEASE_NOTES.md
+          gh release view "v$VERSION" --json url,assets

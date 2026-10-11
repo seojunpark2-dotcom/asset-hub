@@ -59,3 +59,5 @@ export async function readQuotes(userId: string): Promise<Record<string, Quote>>
 export async function clearCache(userId: string) {
   await secureStorage.removeItem('portfolio-' + userId); await secureStorage.removeItem('quotes-' + userId); await secureStorage.removeItem('settings-'+userId);
 }
+
+export const cacheSettings=(userId:string,settings:Settings)=>secureStorage.setItem('settings-'+userId,JSON.stringify(settings));

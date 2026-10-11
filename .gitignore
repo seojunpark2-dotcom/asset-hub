@@ -10,3 +10,6 @@ dist/
 *.keystore
 supabase/.temp/
 artifacts/
+
+android/
+credentials.json

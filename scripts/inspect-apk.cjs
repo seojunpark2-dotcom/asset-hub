@@ -34,5 +34,6 @@ for(let p=8;p<xml.length;){
 }
 const dex=entries.filter(e=>/^classes\d*\.dex$/.test(e.name)).map(e=>e.name);
 if(metadata.package!=='com.portfolio.assettracker'||!dex.length)throw new Error('APK does not match expected application');
+if(process.env.VERSION){const config=require('../app.json').expo;if(metadata.versionName!==process.env.VERSION||metadata.versionCode!==config.android.versionCode)throw new Error('APK version does not match source configuration');}
 const info={file,bytes:apk.length,...metadata,permissions,dexFiles:dex.length,nativeAbis:[...new Set(entries.filter(e=>e.name.startsWith('lib/')).map(e=>e.name.split('/')[1]))],apkSignatureBlockPresent:apk.includes(Buffer.from('APK Sig Block 42'))};
 console.log(JSON.stringify(info,null,2));

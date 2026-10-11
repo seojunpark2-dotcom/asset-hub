@@ -2,13 +2,13 @@
   "expo": {
     "name": "통합 자산관리",
     "slug": "asset-hub",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "assethub",
     "android": {
       "package": "com.portfolio.assettracker",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
@@ -34,7 +34,8 @@
           "color": "#3366FF",
           "defaultChannel": "api-expiry"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
