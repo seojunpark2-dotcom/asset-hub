@@ -10,7 +10,7 @@
 - 샘플 잔고와 가짜 시세를 앱에 넣지 않습니다. 일부 종목의 시세가 없으면 전체 평가금액/수익률을 숨기고 확인된 평가금액을 별도로 표시합니다.
 
 ## APK 다운로드
-[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.2.4/asset-hub-1.2.4.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.2.4) · Android 7.0 이상 · 앱 1.2.4 · ARM 32/64비트
+[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.3.0/asset-hub-1.3.0.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.3.0) · Android 7.0 이상 · 앱 1.3.0 · ARM 32/64비트
 
 비공개 저장소이므로 다운로드하려면 접근 권한이 있는 GitHub 계정으로 로그인해야 합니다. APK 생성과 배포는 GitHub Actions/Gradle 및 GitHub Releases를 사용합니다. 미국주식·국내 ETF 시세는 [서버 API 키 설정](docs/API_KEYS.md)을 사용합니다.
 
@@ -52,8 +52,11 @@ eas.json                        이전 EAS 설정 (새 빌드에 사용하지 �
 
 수수료·세금·배당은 제외합니다. 국내 ETF는 한국 시장의 일별 종가를 사용하며 미국 추종지수 가격으로 대체하지 않습니다. 계좌 자동연동, 일별 손익 기록, 가격 차트, 거래내역은 향후 기능입니다. 종목 검색은 기본 내장 목록이며 나머지는 수동 입력할 수 있습니다.
 
-## API 이용기간 만료 알림 (1.2.4)
+## API 이용기간 만료 알림 (1.3.0)
 만료예정일을 달력에서 선택하고, 7일 전 오전 9시 한국시간 알림을 한 번 예약합니다. 알림이 표시된 날부터 2년 뒤로 앱의 다음 날짜를 자동 변경합니다. 공공데이터포털의 실제 이용기간은 별도로 연장해야 합니다. 휴대폰 알림 설정은 시세 갱신 간격 아래 카드에 있습니다. [사용 안내](docs/API_EXPIRY.md)를 참고하세요.
 
 ## APK 빌드
 Expo EAS 클라우드를 사용하지 않습니다. 저장소의 Actions → Android APK → Run workflow 또는 `npm run build:apk`를 실행하면 검사, 네이티브 빌드, 기존 서명 검증, SHA256 생성 및 GitHub Releases 업로드를 수행합니다. 변경 종류에 따라 major/minor/patch를 올립니다. `npm run version:bump -- patch` (오류 수정), `-- minor` (기능 추가), `-- major` (호환되지 않는 큰 변경)로 버전과 Android versionCode를 함께 올리세요. 이전 배포를 포함한 [버전 대응표](docs/VERSIONS.md)를 참고하세요. [설정 안내](docs/SETUP.md) 및 [작업 지침](AGENTS.md)을 참고하세요.
+
+## 보유자산 홈 화면 위젯 (1.3.0)
+설정 → 보유자산 위젯에서 추가합니다. 총평가금액, 전체 평가손익·수익률, 종목별 수익률을 표시합니다. 위젯은 앱에서 갱신된 데이터이며 탭하면 앱을 열어 조회합니다. [위젯 사용 안내](docs/WIDGET.md).

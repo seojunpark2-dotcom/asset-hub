@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <application>
+    <receiver android:name="expo.modules.assetexpiry.PortfolioWidgetProvider" android:exported="false" android:label="보유자산">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/portfolio_widget_info" />
+    </receiver>
+    <service android:name="expo.modules.assetexpiry.PortfolioWidgetService" android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS" />
     <receiver android:name="expo.modules.assetexpiry.ExpiryAlarmReceiver" android:exported="false">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />

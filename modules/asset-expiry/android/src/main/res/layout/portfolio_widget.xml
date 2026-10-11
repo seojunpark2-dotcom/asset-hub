@@ -1,0 +1,14 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="@drawable/portfolio_widget_background" android:padding="16dp">
+    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="통합 자산관리 · 보유자산" android:textColor="#C3B0FF" android:textSize="13sp" android:textStyle="bold"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="총평가금액" android:textColor="#A2AFC3" android:textSize="12sp" android:layout_marginTop="8dp"/>
+    <TextView android:id="@+id/widget_total" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="—" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="평가손익 · 수익률" android:textColor="#A2AFC3" android:textSize="12sp" android:layout_marginTop="6dp"/>
+    <TextView android:id="@+id/widget_profit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="— · —" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"/>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="10dp">
+        <ListView android:id="@+id/widget_list" android:layout_width="match_parent" android:layout_height="match_parent" android:divider="@android:color/transparent" android:dividerHeight="4dp"/>
+        <TextView android:id="@+id/widget_empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="앱에서 로그인 후 자산을 조회해주세요" android:textColor="#A2AFC3" android:textSize="13sp"/>
+    </FrameLayout>
+    <TextView android:id="@+id/widget_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="눌러서 앱 열기 · 갱신" android:textColor="#A2AFC3" android:textSize="10sp" android:maxLines="2" android:layout_marginTop="8dp"/>
+</LinearLayout>

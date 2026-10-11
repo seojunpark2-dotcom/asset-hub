@@ -11,6 +11,9 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class AssetExpiryModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("AssetExpiry")
+    AsyncFunction("setWidgetUser") { userId: String -> PortfolioWidgetStore.setUser(requireNotNull(appContext.reactContext), userId) }
+    AsyncFunction("updateWidget") { userId: String, json: String -> PortfolioWidgetStore.update(requireNotNull(appContext.reactContext), userId, json) }
+    AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
     AsyncFunction("openNotificationSettings") {
       val context = requireNotNull(appContext.reactContext)
       val intent = if (Build.VERSION.SDK_INT >= 26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)

@@ -1,0 +1,8 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_row"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="8dp">
+        <TextView android:id="@+id/widget_row_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end"/>
+        <TextView android:id="@+id/widget_row_bank" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A2AFC3" android:textSize="10sp" android:maxLines="1" android:ellipsize="end"/>
+    </LinearLayout>
+    <TextView android:id="@+id/widget_row_percent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FF727C" android:textSize="14sp" android:textStyle="bold"/>
+</LinearLayout>
