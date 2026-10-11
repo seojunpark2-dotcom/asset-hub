@@ -130,16 +130,18 @@ function Portfolio({session}: {session:Session}) {
           {total.missing>0&&<Label color="#FFFFFF" size={12}>시세 미확인 {total.missing}건 · 확인된 평가금액 {money(total.knownValue)}</Label>}
         </Card>
         {Object.values(quotes).some(q=>q.stale)&&<Label muted size={12}>일부 자산에 마지막 정상 시세를 사용합니다. 각 종목의 기준 시각을 확인하세요.</Label>}
-        <Label bold size={20}>금융기관별 자산</Label>
-        {[...new Set(holdings.map(h=>h.institution))].map(bank=>{const s=summarize(rows.filter(r=>r.h.institution===bank));return <Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>;})}
         <Label bold size={20}>보유자산</Label>
       </>}
-      {(tab==='홈'||tab==='자산'||tab==='분석')&&<>
-        {tab==='분석'&&<Analysis rows={rows}/>}
+      {tab==='분석'&&<Analysis rows={rows}/>}
+      {(tab==='홈'||tab==='자산')&&<>
         <Choices items={[{value:'value',label:'평가금액순'},{value:'high',label:'수익률 높은순'},{value:'low',label:'수익률 낮은순'}]} value={sort} onChange={setSort}/>
         {ordered.map(row=><Row key={row.h.id} row={row} onPress={()=>setSelected(row.h.id)}/>)}
-        {ready&&!rows.length&&<Card><Label bold>첫 자산을 등록하세요</Label><Label muted>보유종목, 수량, 평균매입단가를 입력하면 투자 현황을 계산합니다.</Label></Card>}
-        <Button title="+ 자산 추가" onPress={()=>setForm(true)}/>
+        {ready&&!rows.length&&<Card><Label bold>{tab==='홈'?'자산 탭에서 첫 자산을 등록하세요':'첫 자산을 등록하세요'}</Label><Label muted>보유종목, 수량, 평균매입단가를 입력하면 투자 현황을 계산합니다.</Label></Card>}
+        {tab==='자산'&&<Button title="+ 자산 추가" onPress={()=>setForm(true)}/>}
+      </>}
+      {tab==='홈'&&<>
+        <Label bold size={20}>금융기관별 자산</Label>
+        {[...new Set(holdings.map(h=>h.institution))].map(bank=>{const s=summarize(rows.filter(r=>r.h.institution===bank));return <Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>;})}
       </>}
       <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}} onAutomatic={async apiExpiry=>{const next={...settings,apiExpiry};setSettings(next);await cacheSettings(userId,next);await saveSettings(userId,next);}}/>
       {tab==='설정'&&<>

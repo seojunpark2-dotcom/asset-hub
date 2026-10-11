@@ -56,5 +56,10 @@
       ],
       "deviceVerification": "not performed"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "patch",
+    "version": "1.2.4",
+    "versionCode": 9
+  }
 }
