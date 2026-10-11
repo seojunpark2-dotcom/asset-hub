@@ -19,11 +19,11 @@
       "version": "1.0.3",
       "versionCode": 5,
       "description": "이전 마지막 숫자 증가 규칙으로 배포한 버전; 규칙 폐기 후에도 실제 APK 이력 보존"
+    },
+    {
+      "version": "1.2.1",
+      "versionCode": 6,
+      "description": "변경 종류에 따른 major.minor.patch 규칙 복원 및 표기 수정"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.2.1",
-    "versionCode": 6
-  }
+  ]
 }

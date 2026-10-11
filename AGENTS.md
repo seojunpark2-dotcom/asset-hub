@@ -7,6 +7,7 @@
 - 과거 실제 버전 1.0.0/1.1.0/1.2.0/1.0.3과 APK·태그를 보존한다. 현재 기능 기준 1.2.0에 이번 규칙 수정을 patch로 적용해 1.2.1/versionCode 6을 사용한다. docs/VERSIONS.md 참고.
 - 마지막 성공 배포를 release-history.json에 기록하고 plannedRelease를 제거한 뒤 npm run version:bump -- major|minor|patch로 앱/패키지/잠금 파일과 Android versionCode를 갱신한다. 변경 종류를 명시하며 내부 수정·테스트·재시도는 별도 버전으로 세지 않는다.
 - versionCode는 이전 설치본보다 반드시 증가시키고 기존 서명을 유지한다. 새 버전은 GitHub Release의 Latest로 명시한다.
+
 ## APK 빌드와 배포 (사용자 요청: 2026-10-11)
 - 앞으로 앱 수정 후 APK 생성에 Expo EAS 클라우드 빌드를 사용하지 않는다.
 - APK는 GitHub Actions 또는 로컬 Android 빌드 환경에서 생성하고 GitHub Releases에 업로드한다.
