@@ -29,11 +29,32 @@
       "version": "1.2.2",
       "versionCode": 7,
       "description": "만료일·알림 저장 버튼 제거, 날짜 선택과 알림 켜기·끄기 자동 저장"
+    },
+    {
+      "version": "1.2.3",
+      "changeType": "patch",
+      "versionCode": 8,
+      "description": "분석 자산 구성·금융기관 비중 내림차순, 종목명순 제거",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "4a80fddecb049b1561dabf8d8513f4f3f439bf58",
+      "tag": "v1.2.3",
+      "releasedAt": "2026-10-11",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.2.3.apk",
+      "requestedApkName": "통합 자산관리 - 1.2.3.apk",
+      "sha256": "e1ff2b6784251f8e96f3040d9ece00c9900de388696aa962dfff387f2b0cf5a8",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.2.3",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.2.3/asset-hub-1.2.3.apk",
+      "checks": [
+        "TypeScript/application/native notification tests passed",
+        "APK name/package/version metadata verified",
+        "Existing signing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest",
+        "Latest and source commit tag verified",
+        "Korean filename preserved in ZIP; GitHub asset filename normalized"
+      ],
+      "deviceVerification": "not performed"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.2.3",
-    "versionCode": 8
-  }
+  ]
 }

@@ -86,3 +86,12 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 1.2.2/versionCode 7, 기존 패키지·인증서 일치 및 v2 서명 무결성 확인. SHA256 D666271F479B771E119069074A3D6524DE93B5E3C9B516CB5AC4ED486D0C8E67, 서버 digest 및 확인 파일 일치.
 - GitHub 한글 파일명 정규화 확인: APK 표시 이름은 한글, 실제 URL은 asset-hub-1.2.2.apk. ZIP 안에 요청한 한글 APK 파일명과 해당 SHA256 보존.
 - 실제 휴대폰에서의 날짜 선택·저장 동작은 이번 작업에서 직접 확인하지 않음.
+
+## 앱 1.2.3 분석 정렬 개선
+- 자산 종류와 금융기관별 원화 평가금액 내림차순 정렬. 비중과 같은 순서, 시세 누락 기관은 마지막, 동률은 기존 순서 유지. 차트·범례 동일 배열 사용. 종목명순 UI와 분기 제거.
+- React 코드 점검: 새 네트워크·효과·의존성 없음, 입력 배열 변경 없음, 안정적 key 유지, 소수 비교 유지.
+- GitHub Actions run 38135965568: 앱·네이티브 테스트 및 APK 생성·검증·업로드 성공. 태그 소스 4a80fddecb049b1561dabf8d8513f4f3f439bf58. Latest v1.2.3 확인.
+- 다운로드 APK 표시 이름 통합 자산관리, 패키지 com.portfolio.assettracker, 1.2.3/versionCode 8, 기존 인증서 일치 및 v2 서명 무결성 확인.
+- SHA256 E1FF2B6784251F8E96F3040D9ECE00C9900DE388696AA962DFFF387F2B0CF5A8, 다운로드 파일·서버 digest·SHA256 파일 일치.
+- 실제 GitHub APK 이름은 asset-hub-1.2.3.apk (한글·공백 정규화 제한). ZIP의 통합 자산관리 - 1.2.3.apk 이름과 동일 해시 확인.
+- 실제 휴대폰 화면 동작은 이번 작업에서 직접 확인하지 않음.
