@@ -132,3 +132,11 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 42,427,743 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.2/versionCode 12. 네이티브 위젯 코드와 분리된 수익률 칸 리소스 포함 확인.
 - 기존 인증서 일치·v2 서명 확인. SHA256 0040EADFA3CC06A8E7411129D6437387EBA291B5F9B9DC1EA4BA6A5B7EE2392F는 다운로드·확인 파일·GitHub digest와 일치.
 - 직접 APK 이름은 asset-hub-1.3.2.apk이며 ZIP 안의 통합 자산관리 - 1.3.2.apk 이름과 동일 해시 확인. 실제 휴대폰 화면은 직접 확인하지 않음.
+
+## 앱 1.3.3 위젯 구분선 · 2026-10-12
+- 총평가금액 아래와 평가손익·수익률 아래에 가로 구분선 추가. Android RemoteViews에서 지원하는 ImageView 배경으로 1dp 두께, 회청색 #40516A, 위아래 12dp 여백. 고정 요약과 스크롤 목록 사이 배치.
+- TypeScript·앱 검사 및 Android API 28/33 네이티브 위젯 화면 구성·기존 좌우 배치·알림 검사 통과. 별도 계산·데이터 변경 없음.
+- GitHub Actions run 38149792552 APK 생성·서명·업로드 단계 통과. Latest v1.3.3과 태그 소스 df9ab68373b63c3c54990196545d06f63cb82a73 일치.
+- 다운로드 APK: 42,427,951 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.3/versionCode 13. 위젯 native 코드·화면 리소스와 두 구분선 view ID 포함 확인.
+- 기존 인증서 일치·v2 서명 확인. SHA256 13A5C398C9CF918CC277C79727BBA21EE9DCE5386CB0D9161F984F4A3BADF224는 다운로드·확인 파일·GitHub digest와 일치.
+- 직접 APK 이름은 asset-hub-1.3.3.apk이며 ZIP 안의 통합 자산관리 - 1.3.3.apk 이름과 동일 해시 확인. GitHub 파일명 정규화 제약으로 한글 이름은 ZIP 안에 보존. 실제 휴대폰 화면은 직접 확인하지 않음.

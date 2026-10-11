@@ -162,11 +162,33 @@
         "Korean filename preserved in ZIP; GitHub asset filename normalized"
       ],
       "deviceVerification": "not performed"
+    },
+    {
+      "version": "1.3.3",
+      "changeType": "patch",
+      "versionCode": 13,
+      "description": "위젯 총평가금액·평가손익 영역 및 평가손익·종목 목록 사이 구분선 추가",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "df9ab68373b63c3c54990196545d06f63cb82a73",
+      "tag": "v1.3.3",
+      "releasedAt": "2026-10-12",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.3.3.apk",
+      "requestedApkName": "통합 자산관리 - 1.3.3.apk",
+      "sha256": "13a5c398c9cf918cc277c79727bba21ee9dce5386cb0d9161f984f4a3badf224",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.3.3",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.3.3/asset-hub-1.3.3.apk",
+      "checks": [
+        "TypeScript and application tests passed",
+        "Native widget layout and expiry tests passed on Android 28 and 33",
+        "Downloaded APK metadata, widget native code and both divider resources verified",
+        "Existing signing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest",
+        "Latest and source commit tag verified",
+        "Korean filename preserved in ZIP; GitHub asset filename normalized"
+      ],
+      "deviceVerification": "not performed"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.3.3",
-    "versionCode": 13
-  }
+  ]
 }
