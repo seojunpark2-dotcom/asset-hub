@@ -55,11 +55,32 @@
         "Korean filename preserved in ZIP; GitHub asset filename normalized"
       ],
       "deviceVerification": "not performed"
+    },
+    {
+      "version": "1.2.4",
+      "changeType": "patch",
+      "versionCode": 9,
+      "description": "도넛 차트 왼쪽 시작·보라/초록/파랑, 분석 목록 제거, 홈 보유자산 우선, 자산 탭 전용 추가",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "983de12a0fa4d18991a395ded20e9f30bca20694",
+      "tag": "v1.2.4",
+      "releasedAt": "2026-10-11",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.2.4.apk",
+      "requestedApkName": "통합 자산관리 - 1.2.4.apk",
+      "sha256": "2d3d1c5ec3442fafc616860159c033df8f6013839a710f3494317f87fccd75d0",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.2.4",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.2.4/asset-hub-1.2.4.apk",
+      "checks": [
+        "TypeScript/application/native notification tests passed",
+        "APK app name/package/version metadata verified",
+        "Existing signing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest",
+        "Latest and source commit tag verified",
+        "Korean filename preserved in ZIP; GitHub asset filename normalized"
+      ],
+      "deviceVerification": "not performed"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.2.4",
-    "versionCode": 9
-  }
+  ]
 }
