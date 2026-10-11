@@ -12,9 +12,6 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.RemoteViews
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 class PortfolioWidgetProvider : AppWidgetProvider() {
   override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) { ids.forEach { updateOne(context, manager, it) } }
@@ -35,7 +32,6 @@ class PortfolioWidgetProvider : AppWidgetProvider() {
     }
     fun row(context: Context, data: JSONObject): RemoteViews = RemoteViews(context.packageName, R.layout.portfolio_widget_row).apply {
       setTextViewText(R.id.widget_row_name, data.optString("name"))
-      setTextViewText(R.id.widget_row_bank, data.optString("institution"))
       setTextViewText(R.id.widget_row_percent, data.optString("percent", "—"))
       setTextColor(R.id.widget_row_percent, color(data.optString("color")))
       setOnClickFillInIntent(R.id.widget_row, Intent())
@@ -49,12 +45,6 @@ class PortfolioWidgetProvider : AppWidgetProvider() {
       view.setTextViewText(R.id.widget_total, snapshot?.optString("totalValue", "—") ?: "—")
       view.setTextViewText(R.id.widget_profit, if (snapshot == null) "— · —" else snapshot.optString("totalProfit", "—") + " · " + snapshot.optString("totalPercent", "—"))
       view.setTextColor(R.id.widget_profit, color(snapshot?.optString("totalColor") ?: ""))
-      val timestamp = try {
-        val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.parse(snapshot?.optString("updatedAt") ?: "")
-        SimpleDateFormat("MM/dd HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone("Asia/Seoul") }.format(requireNotNull(parsed))
-      } catch (_: Exception) { "—" }
-      val status = if (snapshot == null) "눌러서 앱 열기 · 로그인/조회" else "앱 반영 $timestamp" + (if (snapshot.optBoolean("stale")) " · 이전/미확인 시세" else if (snapshot.optBoolean("delayed")) " · 일별/지연 시세" else "") + "\n눌러서 앱 열기 · 갱신"
-      view.setTextViewText(R.id.widget_status, status)
       view.setTextViewText(R.id.widget_empty, if (snapshot == null) "앱에서 로그인 후 자산을 조회해주세요" else "자산 탭에서 보유자산을 추가해주세요")
       view.setEmptyView(R.id.widget_list, R.id.widget_empty)
       if (Build.VERSION.SDK_INT >= 31 && (rows?.length() ?: 0) <= 100) {
@@ -68,10 +58,9 @@ class PortfolioWidgetProvider : AppWidgetProvider() {
       }
       val launch = Intent(Intent.ACTION_VIEW, Uri.parse("assethub://widget")).setComponent(ComponentName(context.packageName, context.packageName + ".MainActivity")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
       val tap = PendingIntent.getActivity(context, id, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-      view.setOnClickPendingIntent(R.id.widget_title, tap)
+      view.setOnClickPendingIntent(R.id.widget_root, tap)
       view.setOnClickPendingIntent(R.id.widget_total, tap)
       view.setOnClickPendingIntent(R.id.widget_profit, tap)
-      view.setOnClickPendingIntent(R.id.widget_status, tap)
       view.setOnClickPendingIntent(R.id.widget_empty, tap)
       val listTap = PendingIntent.getActivity(context, id + 100000, launch, PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0))
       view.setPendingIntentTemplate(R.id.widget_list, listTap)

@@ -1,6 +1,6 @@
 package expo.modules.assetexpiry
 
-import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.ListView
 import org.junit.Test
@@ -36,7 +36,14 @@ class PortfolioWidgetTest {
     val view = PortfolioWidgetProvider.views(context, 41).apply(context, null)
     assertEquals("₩350", view.findViewById<TextView>(R.id.widget_total).text.toString())
     assertEquals("+₩50 · +16.67%", view.findViewById<TextView>(R.id.widget_profit).text.toString())
-    assertTrue(view.findViewById<TextView>(R.id.widget_status).text.contains("10/11 09:00"))
+    fun texts(root: android.view.View): List<String> = when (root) {
+      is TextView -> listOf(root.text.toString())
+      is ViewGroup -> (0 until root.childCount).flatMap { texts(root.getChildAt(it)) }
+      else -> emptyList()
+    }
+    assertFalse(texts(view).any { it.contains("통합 자산관리") || it.contains("앱 반영") || it.contains("눌러서") })
+    val row = PortfolioWidgetProvider.row(context, org.json.JSONObject(payload).getJSONArray("rows").getJSONObject(0)).apply(context, null)
+    assertEquals(listOf("ETF A", "+50.00%"), texts(row))
     assertNotNull(view.findViewById<ListView>(R.id.widget_list))
     PortfolioWidgetStore.setUser(context, "")
     val loggedOut = PortfolioWidgetProvider.views(context, 41).apply(context, null)
