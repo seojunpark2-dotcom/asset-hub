@@ -35,7 +35,19 @@ class PortfolioWidgetTest {
     PortfolioWidgetStore.update(context, "A", payload)
     val view = PortfolioWidgetProvider.views(context, 41).apply(context, null)
     assertEquals("₩350", view.findViewById<TextView>(R.id.widget_total).text.toString())
-    assertEquals("+₩50 · +16.67%", view.findViewById<TextView>(R.id.widget_profit).text.toString())
+    val profit = view.findViewById<TextView>(R.id.widget_profit)
+    val percent = view.findViewById<TextView>(R.id.widget_percent)
+    assertEquals("+₩50", profit.text.toString())
+    assertEquals("+16.67%", percent.text.toString())
+    for (widthDp in listOf(240, 400)) {
+      val width = (widthDp * context.resources.displayMetrics.density).toInt()
+      view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY), android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY))
+      view.layout(0, 0, width, width)
+      val profitRow = view.findViewById<ViewGroup>(R.id.widget_profit_row)
+      assertEquals(0, profit.left)
+      assertTrue(percent.left - profit.right >= 20 * context.resources.displayMetrics.density - 1)
+      assertEquals(profitRow.width, percent.right)
+    }
     fun texts(root: android.view.View): List<String> = when (root) {
       is TextView -> listOf(root.text.toString())
       is ViewGroup -> (0 until root.childCount).flatMap { texts(root.getChildAt(it)) }
@@ -48,5 +60,6 @@ class PortfolioWidgetTest {
     PortfolioWidgetStore.setUser(context, "")
     val loggedOut = PortfolioWidgetProvider.views(context, 41).apply(context, null)
     assertEquals("—", loggedOut.findViewById<TextView>(R.id.widget_total).text.toString())
+    assertEquals("—", loggedOut.findViewById<TextView>(R.id.widget_percent).text.toString())
   }
 }

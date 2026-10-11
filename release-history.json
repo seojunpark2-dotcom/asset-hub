@@ -136,5 +136,10 @@
       ],
       "deviceVerification": "not performed"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "patch",
+    "version": "1.3.2",
+    "versionCode": 12
+  }
 }
