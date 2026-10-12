@@ -1,3 +1,7 @@
+국내 ETF는 1.5.0부터 Yahoo Finance 휴대폰 직접 조회를 사용합니다. 공공데이터 키·한국투자 계좌 등록은 필요하지 않습니다. [동작·설정·제한 안내](docs/YAHOO_FINANCE.md). 아래 기존 공급자와 만료일 설명은 master / 이전 APK 기록입니다.
+
+---
+
 # 통합 자산관리 · Asset Hub
 
 여러 증권사와 업비트의 주식·ETF·암호화폐를 원화 기준으로 모아 보는 **Android 네이티브 앱**입니다. Expo / React Native / TypeScript / Supabase를 사용하며, 보유수량과 매입가격을 직접 등록합니다.
@@ -10,7 +14,7 @@
 - 샘플 잔고와 가짜 시세를 앱에 넣지 않습니다. 일부 종목의 시세가 없으면 전체 평가금액/수익률을 숨기고 확인된 평가금액을 별도로 표시합니다.
 
 ## APK 다운로드
-[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.3.3/asset-hub-1.3.3.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.3.3) · Android 7.0 이상 · 앱 1.3.3 · ARM 32/64비트
+[GitHub APK 다운로드](https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.5.0/asset-hub-1.5.0.apk) · [릴리스 페이지](https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.5.0) · Android 7.0 이상 · 앱 1.5.0 · ARM 32/64비트
 
 비공개 저장소이므로 다운로드하려면 접근 권한이 있는 GitHub 계정으로 로그인해야 합니다. APK 생성과 배포는 GitHub Actions/Gradle 및 GitHub Releases를 사용합니다. 미국주식·국내 ETF 시세는 [서버 API 키 설정](docs/API_KEYS.md)을 사용합니다.
 

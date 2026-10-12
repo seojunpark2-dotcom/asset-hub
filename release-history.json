@@ -189,6 +189,40 @@
         "Korean filename preserved in ZIP; GitHub asset filename normalized"
       ],
       "deviceVerification": "not performed"
+    },
+    {
+      "version": "1.4.0",
+      "changeType": "minor",
+      "versionCode": 14,
+      "description": "api 브랜치 한국투자 국내 시세·영속 접근 토큰 자동 발급/재발급 및 연결 상태",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "5e58f46876e6b9917842d29da18143d8ca3a5740",
+      "tag": "v1.4.0",
+      "releasedAt": "2026-10-12",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.4.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.4.0.apk",
+      "sha256": "15115be61cfa9d45739dc57672d713beb121eb94d8f64b08cef6d740e8ae3df6",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.4.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.4.0/asset-hub-1.4.0.apk",
+      "checks": [
+        "TypeScript and 30 application tests passed",
+        "Native Android 28/33 notification and widget tests passed",
+        "Live Supabase Auth/CRUD/RLS and both Upbit endpoints verified; missing KIS keys explicitly reported",
+        "Private broker token/cache access denied to anon and authenticated users",
+        "Downloaded APK metadata, KIS endpoint bundle and existing widget resources verified",
+        "Existing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest; ZIP preserves Korean name",
+        "Latest and api source commit tag verified; master and legacy function unchanged"
+      ],
+      "kisLiveVerification": "not performed: no KIS account/appkeys yet",
+      "deviceVerification": "not performed"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.5.0",
+    "versionCode": 15
+  }
 }

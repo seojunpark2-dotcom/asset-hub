@@ -17,3 +17,7 @@
 - 빌드가 완료된 실제 APK와 SHA256을 GitHub Releases에 올리고 업로드 상태와 파일 해시를 확인한다.
 - 사용자에게 GitHub APK 다운로드 링크 및 설치 순서를 제공한다. 현재 저장소는 비공개이므로 접근 가능한 GitHub 계정의 로그인이 필요하다.
 - GitHub Actions/Gradle 빌드 경로는 2026-10-11에 앱 1.2.0으로 검증 완료했다. 네이티브 알림 테스트, APK 서명 무결성 및 기존 인증서 일치, GitHub 업로드와 다운로드 해시를 확인했다. 실기기 설치·알림 수신은 별도 확인한다.
+
+## Yahoo Finance 작업 (2026-10-12)
+- codex/yahoo-finance에서만 변경하며 master는 유지한다. 국내 ETF는 휴대폰 직접 Yahoo 조회·5분 캐시를 사용한다. 별도 키나 계좌 등록은 없으며 영구 제공을 보장하지 않는다. docs/YAHOO_FINANCE.md 참고.
+

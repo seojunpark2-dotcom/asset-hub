@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Holding, Quote, Settings, quoteKey } from './types';
 import { secureStorage } from './storage';
 import { positive } from './finance';
+import {yahooQuotes} from './yahooQuotes';
 const db = () => { if (!supabase) throw new Error('Supabase 연결 설정이 필요합니다.'); return supabase; };
 export function normalizeHolding(row: Record<string, unknown>): Holding {
   const h = { ...row };
@@ -30,14 +31,15 @@ export async function deleteHolding(h: Holding) {
   const { error } = await db().from('portfolio_holdings').delete().eq('id', h.id).eq('user_id', h.user_id);
   if (error) throw error;
 }
-export async function getQuotes(): Promise<{ quotes: Record<string, Quote>; errors: Record<string, string> }> {
-  const { data, error } = await db().functions.invoke('portfolio-quotes', { body: {} });
+export async function getQuotes(cached:Record<string,Quote>={}): Promise<{ quotes: Record<string, Quote>; errors: Record<string, string> }> {
+  const { data, error } = await db().functions.invoke('portfolio-quotes-yahoo', { body: {} });
   if (error) throw new Error('시세 서버에 연결하지 못했습니다. 마지막 정상 시세를 표시합니다.');
   const quotes: Record<string, Quote> = {};
   for (const q of (data.quotes ?? []) as Quote[]) {
     try { positive(String(q.current_price), '현재가격'); quotes[quoteKey(q.market, q.symbol)] = { ...q, current_price: String(q.current_price) }; } catch { /* invalid upstream values are excluded */ }
   }
-  return { quotes, errors: data.errors ?? {} };
+  const yahoo=await yahooQuotes(data.yahooEtfs,cached);
+  return { quotes:{...quotes,...yahoo.quotes}, errors:{...(data.errors??{}),...yahoo.errors} };
 }
 export async function loadSettings(userId: string): Promise<Settings | null> {
   const { data, error } = await db().from('portfolio_profiles').select('settings').eq('user_id', userId).maybeSingle();

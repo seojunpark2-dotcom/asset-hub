@@ -9,14 +9,13 @@ import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cac
 import { ThemeContext, Theme, Button, Card, Label, Field, Choices, useTheme } from './src/ui';
 import { HoldingForm } from './src/HoldingForm';
 import { Analysis } from './src/Charts';
-import { ApiExpirySettings, NotificationSettings } from './src/ApiExpirySettings';
-import { defaultApiExpiry, daysRemaining, expiryLabel } from './src/apiExpiry';
+import { NotificationSettings } from './src/ApiExpirySettings';
 import { Notifications, cancelExpiryNotifications } from './src/expiryNotifications';
 import {widgetSnapshot} from './src/widgetData';
 import {setWidgetUser,syncPortfolioWidget,pinPortfolioWidget} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
 const dark={bg:'#101723',card:'#1B2536',text:'#F4F7FC',muted:'#A2AFC3',line:'#2C384E',accent:'#6488FF',gain:'#FF727C',loss:'#65A4FF'};
-const defaults:Settings={dark:false,interval:60,colors:'kr',apiExpiry:defaultApiExpiry};
+const defaults:Settings={dark:false,interval:60,colors:'kr'};
 function errorMessage(e:unknown){return e instanceof Error?e.message:'연결하지 못했습니다. 잠시 후 다시 시도하세요.';}
 function AuthScreen() {
   const [email,setEmail]=useState('');const [password,setPassword]=useState('');
@@ -64,6 +63,7 @@ function Portfolio({session}: {session:Session}) {
   const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');const [ready,setReady]=useState(false);
   const [form,setForm]=useState<Holding|true|null>(null);const [selected,setSelected]=useState<string|null>(null);
   const [sort,setSort]=useState('value');const running=useRef(false);const mounted=useRef(true);const quoteRef=useRef(quotes);
+  useEffect(()=>{void cancelExpiryNotifications(userId).catch(()=>{if(mounted.current)setNotice('기존 공공데이터 만료 알림 해제에 실패했습니다. 앱을 다시 열어주세요.');});},[userId]);
   useEffect(()=>{quoteRef.current=quotes;},[quotes]);
   const refresh=useCallback(async()=>{
     if(running.current||!mounted.current)return;running.current=true;setBusy(true);
@@ -71,7 +71,7 @@ function Portfolio({session}: {session:Session}) {
     try {
       try {const data=await loadHoldings(userId);if(mounted.current)setHoldings(data);}catch(e){notices.push('자산 동기화에 실패했습니다. 저장된 데이터를 표시합니다.');}
       try {
-        const result=await getQuotes();
+        const result=await getQuotes(quoteRef.current);
         const next=Object.fromEntries(Object.entries(quoteRef.current).map(([k,q])=>[k,{...q,stale:true}]));
         Object.assign(next,result.quotes);
         if(mounted.current){quoteRef.current=next;setQuotes(next);await cacheQuotes(userId,next);}
@@ -88,7 +88,7 @@ function Portfolio({session}: {session:Session}) {
     void (async()=>{try{
       const [hs,qs]=await Promise.all([cachedHoldings(userId),readQuotes(userId)]);
       if(mounted.current){setHoldings(hs);setQuotes(qs);quoteRef.current=qs;}
-      try{const pref=await loadSettings(userId);if(mounted.current){setSettings({...defaults,...pref,apiExpiry:pref?.apiExpiry??defaultApiExpiry});setSettingsReady(true);}}catch{if(mounted.current)setNotice('설정을 불러오지 못했습니다. 앱을 다시 열어주세요.');}
+      try{const pref=await loadSettings(userId);if(mounted.current){setSettings({...defaults,...pref});setSettingsReady(true);}}catch{if(mounted.current)setNotice('설정을 불러오지 못했습니다. 앱을 다시 열어주세요.');}
     }catch{/* corrupted cache does not prevent loading server state */}finally{if(mounted.current)void refresh();}})();
     return()=>{mounted.current=false;};
   },[refresh,userId]);
@@ -115,8 +115,6 @@ function Portfolio({session}: {session:Session}) {
     const link=Linking.addEventListener('url',event=>openUrl(event.url));
     return()=>{listener.remove();link.remove();};
   },[refresh]);
-  let expiryWarning='';
-  try{const date=settings.apiExpiry?.date;if(settingsReady&&date&&daysRemaining(date)<=30)expiryWarning='공공데이터 API: '+expiryLabel(date)+' ('+date+'). 설정에서 이용기간을 확인하세요.';}catch{/* malformed expiry is corrected in settings */}
   const detail=rows.find(r=>r.h.id===selected);
   function remove(h:Holding){
     Alert.alert('자산 삭제',h.name+'을 삭제할까요?',[{text:'취소',style:'cancel'},{text:'삭제',style:'destructive',onPress:()=>void(async()=>{try{await deleteHolding(h);setHoldings(prev=>prev.filter(item=>item.id!==h.id));setSelected(null);await refresh();}catch(e){Alert.alert('삭제 실패',errorMessage(e));}})()}]);
@@ -126,7 +124,6 @@ function Portfolio({session}: {session:Session}) {
     <ScrollView contentContainerStyle={{padding:18,gap:16,paddingBottom:30}} refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>void refresh()} tintColor={theme.accent}/>}>
       {!!notice&&<Card><Label size={13} color={theme.muted}>{notice}</Label><Button title="다시 조회" secondary disabled={busy} onPress={()=>void refresh()}/></Card>}
       {!ready&&!holdings.length&&<Label muted>자산을 불러오는 중입니다…</Label>}
-      {tab==='홈'&&!!expiryWarning&&<Card><Label bold>{expiryWarning}</Label><Button secondary title="API 만료일 설정 열기" onPress={()=>setTab('설정')}/></Card>}
       {tab==='홈'&&<>
         <Card style={{backgroundColor:theme.accent,borderColor:theme.accent}}><Label color="#DCE6FF">총 평가금액</Label><Label bold size={34} color="#FFFFFF">{money(total.value)}</Label>
           <View style={{flexDirection:'row',justifyContent:'space-between'}}><Label color="#DCE6FF">총 투자원금</Label><Label color="#FFFFFF">{money(total.cost)}</Label></View>
@@ -147,7 +144,7 @@ function Portfolio({session}: {session:Session}) {
         <Label bold size={20}>금융기관별 자산</Label>
         {banks.map(({bank,summary:s})=><Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>)}
       </>}
-      <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}} onAutomatic={async apiExpiry=>{const next={...settings,apiExpiry};setSettings(next);await cacheSettings(userId,next);await saveSettings(userId,next);}}/>
+      {tab==='설정'?<Card><Label bold>국내 ETF 시세 · Yahoo Finance</Label><Label muted>국내 ETF는 휴대폰에서 야후 파이낸스로 직접 조회합니다. 별도 API 키나 계좌 등록은 필요하지 않습니다. 가격은 5분간 재사용하며 지연 시세일 수 있습니다. 종목별 가격 기준시각을 확인하세요.</Label></Card>:null}
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
