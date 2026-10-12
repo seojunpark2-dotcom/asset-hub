@@ -190,5 +190,10 @@
       ],
       "deviceVerification": "not performed"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.4.0",
+    "versionCode": 14
+  }
 }

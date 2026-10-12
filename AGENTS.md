@@ -17,3 +17,8 @@
 - 빌드가 완료된 실제 APK와 SHA256을 GitHub Releases에 올리고 업로드 상태와 파일 해시를 확인한다.
 - 사용자에게 GitHub APK 다운로드 링크 및 설치 순서를 제공한다. 현재 저장소는 비공개이므로 접근 가능한 GitHub 계정의 로그인이 필요하다.
 - GitHub Actions/Gradle 빌드 경로는 2026-10-11에 앱 1.2.0으로 검증 완료했다. 네이티브 알림 테스트, APK 서명 무결성 및 기존 인증서 일치, GitHub 업로드와 다운로드 해시를 확인했다. 실기기 설치·알림 수신은 별도 확인한다.
+
+## api 브랜치 작업 (2026-10-12)
+- 사용자 요청에 따라 한국투자 공급자·자동 토큰 관리 작업은 api 브랜치에서만 진행한다. master 및 기존 portfolio-quotes 함수는 수정하거나 병합하지 않는다.
+- api 앱은 portfolio-quotes-kis를 사용한다. 최초 KIS_APP_KEY / KIS_APP_SECRET 설정은 필요하며 앱키 자체 이용기간 자동 연장을 보장하지 않는다. docs/KIS_API.md 참고.
+

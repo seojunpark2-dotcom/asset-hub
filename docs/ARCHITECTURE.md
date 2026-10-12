@@ -1,3 +1,9 @@
+# api 브랜치 1.4.0 구조
+
+새 앱 → Supabase Auth/RLS → portfolio-quotes-kis → 한국투자 국내 시세(60초 캐시), 기존 Finnhub/Upbit/환율 공급자 → portfolio_quote_cache_kis. 비공개 portfolio_private.kis_sessions와 service_role 전용 RPC가 토큰 발급 잠금·저장을 담당합니다. [KIS 설계와 제한](KIS_API.md). 아래 공급자 표와 portfolio-quotes 경로는 master / 기존 APK 기록입니다.
+
+---
+
 # 설계 및 실제 시세 공급자
 
 ## 데이터 흐름

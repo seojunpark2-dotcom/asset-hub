@@ -3,20 +3,20 @@ import { ActivityIndicator, Alert, AppState, Linking, Modal, Pressable, RefreshC
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { Session } from '@supabase/supabase-js';
 import { configured, supabase } from './src/supabase';
-import { Holding, Quote, Settings, assetLabels, marketOf, quoteKey } from './src/types';
+import { Holding, Quote, Settings, KisStatus, assetLabels, marketOf, quoteKey } from './src/types';
 import { valueHolding, summarize, money, pct, signedMoney, Valuation } from './src/finance';
-import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, cacheSettings, clearCache } from './src/portfolio';
+import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, clearCache } from './src/portfolio';
 import { ThemeContext, Theme, Button, Card, Label, Field, Choices, useTheme } from './src/ui';
 import { HoldingForm } from './src/HoldingForm';
 import { Analysis } from './src/Charts';
-import { ApiExpirySettings, NotificationSettings } from './src/ApiExpirySettings';
-import { defaultApiExpiry, daysRemaining, expiryLabel } from './src/apiExpiry';
+import { NotificationSettings } from './src/ApiExpirySettings';
+import {KisSettings} from './src/KisSettings';
 import { Notifications, cancelExpiryNotifications } from './src/expiryNotifications';
 import {widgetSnapshot} from './src/widgetData';
 import {setWidgetUser,syncPortfolioWidget,pinPortfolioWidget} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
 const dark={bg:'#101723',card:'#1B2536',text:'#F4F7FC',muted:'#A2AFC3',line:'#2C384E',accent:'#6488FF',gain:'#FF727C',loss:'#65A4FF'};
-const defaults:Settings={dark:false,interval:60,colors:'kr',apiExpiry:defaultApiExpiry};
+const defaults:Settings={dark:false,interval:60,colors:'kr'};
 function errorMessage(e:unknown){return e instanceof Error?e.message:'연결하지 못했습니다. 잠시 후 다시 시도하세요.';}
 function AuthScreen() {
   const [email,setEmail]=useState('');const [password,setPassword]=useState('');
@@ -43,14 +43,14 @@ function Row({row,onPress}: {row:Valuation;onPress:()=>void}) {
   const t=useTheme();const color=row.profit?.gte(0)?t.gain:t.loss;
   return <Pressable accessibilityRole="button" accessibilityLabel={row.h.name+' 상세정보'} onPress={onPress}><Card><View style={{flexDirection:'row',justifyContent:'space-between',gap:12}}><View style={{flex:1}}><Label bold size={18}>{row.h.name}</Label><Label muted size={12}>{row.h.institution} · {row.h.symbol}</Label></View><View style={{alignItems:'flex-end'}}><Label bold size={18}>{money(row.value)}</Label><Label color={color}>{pct(row.percent)}</Label></View></View>
     <View style={{flexDirection:'row',justifyContent:'space-between'}}><Label muted size={12}>현재가 {money(row.quote?.current_price??null,row.h.purchase_currency)}</Label><Label size={13} color={color}>{signedMoney(row.profit)}</Label></View>
-    <Label muted size={11}>{row.quote?(row.quote.stale?'마지막 정상 시세 · ':row.quote.delayed?'지연 / 일별 시세 · ':'최근 시세 · ')+new Date(row.quote.updated_at).toLocaleString('ko-KR'): '시세 확인 필요'}{row.fx?.stale?' · 환율 캐시':''}</Label>
+    <Label muted size={11}>{row.quote?(row.quote.stale?'마지막 정상 시세 · ':row.quote.time_basis==='retrieved'?'조회 시점 현재가 · ':row.quote.delayed?'지연 / 일별 시세 · ':'최근 시세 · ')+new Date(row.quote.updated_at).toLocaleString('ko-KR'): '시세 확인 필요'}{row.fx?.stale?' · 환율 캐시':''}</Label>
   </Card></Pressable>;
 }
 function Detail({row,total,onEdit,onDelete,onClose}: {row:Valuation;total:ReturnType<typeof summarize>;onEdit:()=>void;onDelete:()=>void;onClose:()=>void}) {
   const fields=[['종목코드',row.h.symbol],['금융기관',row.h.institution],['자산 종류',assetLabels[row.h.asset_type]],['현재가격',money(row.quote?.current_price??null,row.h.purchase_currency)],['평균매입단가',money(row.h.average_purchase_price,row.h.purchase_currency)],['보유수량',row.h.quantity],['원화 투자원금',money(row.cost)],['평가금액',money(row.value)],['평가손익',signedMoney(row.profit)],['수익률',pct(row.percent)],['전체 비중',total.value?.gt(0)&&row.value?row.value.div(total.value).mul(100).toFixed(2)+'%':'—']];
   if(row.h.purchase_currency==='USD')fields.push(['적용 USD/KRW',row.fx?.current_price??'—'],['주가 변동 손익',signedMoney(row.stockProfit)],['환율 변동 손익',signedMoney(row.fxProfit)]);
   return <ScrollView contentContainerStyle={{padding:20,gap:18}}><Label bold size={28}>{row.h.name}</Label><Card>{fields.map(([label,value])=><View key={label} style={{flexDirection:'row',justifyContent:'space-between',gap:10}}><Label muted>{label}</Label><Label bold>{value}</Label></View>)}</Card>
-    <Card><Label muted size={12}>시세 출처: {row.quote?.source??'조회 전'}{ '\n' }가격 기준: {row.quote?new Date(row.quote.updated_at).toLocaleString('ko-KR'):'—'}{ '\n' }조회 시각: {row.quote?new Date(row.quote.fetched_at).toLocaleString('ko-KR'):'—'}{ '\n' }{row.quote?.stale?'캐시 가격입니다. 최신 조회에 실패했습니다.':row.quote?.delayed?'일별 또는 지연 데이터입니다.':'공급자의 최근 거래가격입니다.'}</Label>{row.fx&&<Label muted size={12}>환율 기준일: {row.fx.updated_at.slice(0,10)} · 일별 기준환율</Label>}</Card>
+    <Card><Label muted size={12}>시세 출처: {row.quote?.source??'조회 전'}{ '\n' }가격 기준: {row.quote?new Date(row.quote.updated_at).toLocaleString('ko-KR'):'—'}{ '\n' }조회 시각: {row.quote?new Date(row.quote.fetched_at).toLocaleString('ko-KR'):'—'}{ '\n' }{row.quote?.stale?'캐시 가격입니다. 최신 조회에 실패했습니다.':row.quote?.time_basis==='retrieved'?'한국투자 REST 조회 시점의 현재가입니다. 표기 시각은 체결시각이 아닌 조회시각입니다.':row.quote?.delayed?'일별 또는 지연 데이터입니다.':'공급자의 최근 거래가격입니다.'}</Label>{row.fx&&<Label muted size={12}>환율 기준일: {row.fx.updated_at.slice(0,10)} · 일별 기준환율</Label>}</Card>
     <Label muted size={12}>수수료·세금·배당은 계산에서 제외합니다. 주가/환율 손익은 원화 원금으로부터 산출한 매입 환율을 기준으로 분해합니다.</Label>
     <Button title="자산 수정" onPress={onEdit}/><Button title="자산 삭제" secondary onPress={onDelete}/><Button title="닫기" secondary onPress={onClose}/>
   </ScrollView>;
@@ -62,8 +62,10 @@ function Portfolio({session}: {session:Session}) {
   const theme:Theme={...(settings.dark?dark:light),...(settings.colors==='global'?{gain:'#15AB82',loss:'#E44853'}:{})};
   const [tab,setTab]=useState('홈');const [holdings,setHoldings]=useState<Holding[]>([]);const [quotes,setQuotes]=useState<Record<string,Quote>>({});
   const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');const [ready,setReady]=useState(false);
+  const [kisStatus,setKisStatus]=useState<KisStatus|null>(null);
   const [form,setForm]=useState<Holding|true|null>(null);const [selected,setSelected]=useState<string|null>(null);
   const [sort,setSort]=useState('value');const running=useRef(false);const mounted=useRef(true);const quoteRef=useRef(quotes);
+  useEffect(()=>{void cancelExpiryNotifications(userId).catch(()=>{if(mounted.current)setNotice('기존 공공데이터 만료 알림 해제에 실패했습니다. 앱을 다시 열어주세요.');});},[userId]);
   useEffect(()=>{quoteRef.current=quotes;},[quotes]);
   const refresh=useCallback(async()=>{
     if(running.current||!mounted.current)return;running.current=true;setBusy(true);
@@ -74,7 +76,7 @@ function Portfolio({session}: {session:Session}) {
         const result=await getQuotes();
         const next=Object.fromEntries(Object.entries(quoteRef.current).map(([k,q])=>[k,{...q,stale:true}]));
         Object.assign(next,result.quotes);
-        if(mounted.current){quoteRef.current=next;setQuotes(next);await cacheQuotes(userId,next);}
+        if(mounted.current){quoteRef.current=next;setQuotes(next);setKisStatus(result.kis);await cacheQuotes(userId,next);}
         notices.push(...Object.values(result.errors));
       }catch(e){
         if(mounted.current)setQuotes(prev=>Object.fromEntries(Object.entries(prev).map(([k,q])=>[k,{...q,stale:true}])));
@@ -88,7 +90,7 @@ function Portfolio({session}: {session:Session}) {
     void (async()=>{try{
       const [hs,qs]=await Promise.all([cachedHoldings(userId),readQuotes(userId)]);
       if(mounted.current){setHoldings(hs);setQuotes(qs);quoteRef.current=qs;}
-      try{const pref=await loadSettings(userId);if(mounted.current){setSettings({...defaults,...pref,apiExpiry:pref?.apiExpiry??defaultApiExpiry});setSettingsReady(true);}}catch{if(mounted.current)setNotice('설정을 불러오지 못했습니다. 앱을 다시 열어주세요.');}
+      try{const pref=await loadSettings(userId);if(mounted.current){setSettings({...defaults,...pref});setSettingsReady(true);}}catch{if(mounted.current)setNotice('설정을 불러오지 못했습니다. 앱을 다시 열어주세요.');}
     }catch{/* corrupted cache does not prevent loading server state */}finally{if(mounted.current)void refresh();}})();
     return()=>{mounted.current=false;};
   },[refresh,userId]);
@@ -115,8 +117,6 @@ function Portfolio({session}: {session:Session}) {
     const link=Linking.addEventListener('url',event=>openUrl(event.url));
     return()=>{listener.remove();link.remove();};
   },[refresh]);
-  let expiryWarning='';
-  try{const date=settings.apiExpiry?.date;if(settingsReady&&date&&daysRemaining(date)<=30)expiryWarning='공공데이터 API: '+expiryLabel(date)+' ('+date+'). 설정에서 이용기간을 확인하세요.';}catch{/* malformed expiry is corrected in settings */}
   const detail=rows.find(r=>r.h.id===selected);
   function remove(h:Holding){
     Alert.alert('자산 삭제',h.name+'을 삭제할까요?',[{text:'취소',style:'cancel'},{text:'삭제',style:'destructive',onPress:()=>void(async()=>{try{await deleteHolding(h);setHoldings(prev=>prev.filter(item=>item.id!==h.id));setSelected(null);await refresh();}catch(e){Alert.alert('삭제 실패',errorMessage(e));}})()}]);
@@ -126,7 +126,6 @@ function Portfolio({session}: {session:Session}) {
     <ScrollView contentContainerStyle={{padding:18,gap:16,paddingBottom:30}} refreshControl={<RefreshControl refreshing={busy} onRefresh={()=>void refresh()} tintColor={theme.accent}/>}>
       {!!notice&&<Card><Label size={13} color={theme.muted}>{notice}</Label><Button title="다시 조회" secondary disabled={busy} onPress={()=>void refresh()}/></Card>}
       {!ready&&!holdings.length&&<Label muted>자산을 불러오는 중입니다…</Label>}
-      {tab==='홈'&&!!expiryWarning&&<Card><Label bold>{expiryWarning}</Label><Button secondary title="API 만료일 설정 열기" onPress={()=>setTab('설정')}/></Card>}
       {tab==='홈'&&<>
         <Card style={{backgroundColor:theme.accent,borderColor:theme.accent}}><Label color="#DCE6FF">총 평가금액</Label><Label bold size={34} color="#FFFFFF">{money(total.value)}</Label>
           <View style={{flexDirection:'row',justifyContent:'space-between'}}><Label color="#DCE6FF">총 투자원금</Label><Label color="#FFFFFF">{money(total.cost)}</Label></View>
@@ -147,7 +146,7 @@ function Portfolio({session}: {session:Session}) {
         <Label bold size={20}>금융기관별 자산</Label>
         {banks.map(({bank,summary:s})=><Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>)}
       </>}
-      <ApiExpirySettings userId={userId} value={settings.apiExpiry} ready={settingsReady} visible={tab==='설정'} onSave={async apiExpiry=>{const next={...settings,apiExpiry};await saveSettings(userId,next);setSettings(next);}} onAutomatic={async apiExpiry=>{const next={...settings,apiExpiry};setSettings(next);await cacheSettings(userId,next);await saveSettings(userId,next);}}/>
+      {tab==='설정'&&<KisSettings status={kisStatus}/>}
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>

@@ -12,6 +12,8 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  `);
  const sql=await readFile(new URL('../supabase/migrations/20261010091417_portfolio_schema.sql',import.meta.url),'utf8');
  await db.exec(sql);
+ const kisMigration=await readFile(new URL('../supabase/migrations/20261012133721_portfolio_kis_api_branch.sql',import.meta.url),'utf8');
+ await db.exec(kisMigration);
  const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
  await db.exec(`insert into auth.users values ('${a}'),('${b}'); set role authenticated;select set_config('request.jwt.claim.sub','${a}',false);`);
  await db.exec(`insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
@@ -23,11 +25,26 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  await assert.rejects(()=>db.exec(`update portfolio_holdings set user_id='${b}'`));
  await assert.rejects(()=>db.exec(`insert into portfolio_quote_cache values('BTC','UPBIT','KRW','100',now(),now(),'test',false)`));
  await assert.rejects(()=>db.exec(`select portfolio_claim_quote('US:NVDA',60)`));
+ await assert.rejects(()=>db.query('select * from portfolio_private.kis_sessions'));
+ await assert.rejects(()=>db.query(`select portfolio_kis_session_read(repeat('a',64))`));
+ await assert.rejects(()=>db.query('select * from portfolio_quote_cache_kis'));
  await db.exec(`select set_config('request.jwt.claim.sub','${b}',false)`);
  assert.equal((await db.query('select * from portfolio_holdings_read')).rows.length,0);
  assert.equal((await db.query('select * from portfolio_profiles')).rows.length,0);
  assert.equal((await db.query('delete from portfolio_holdings returning id')).rows.length,0);
  await db.exec('reset role;set role service_role;');
+ const key='a'.repeat(64),owner='00000000-0000-0000-0000-000000000010';
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_claim('${key}','${owner}') as ok`)).rows[0]?.ok,true);
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_claim('${key}','${a}') as ok`)).rows[0]?.ok,false);
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_save('${key}','${a}','wrong-owner',now()+interval '1 day') as ok`)).rows[0]?.ok,false);
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_save('${key}','${owner}','stored-secret-token',now()+interval '1 day') as ok`)).rows[0]?.ok,true);
+ await db.query(`select portfolio_kis_session_invalidate('${key}','older-token')`);
+ assert.equal((await db.query<{token:string}>(`select portfolio_kis_session_read('${key}')->>'token' as token`)).rows[0]?.token,'stored-secret-token');
+ await db.query(`select portfolio_kis_session_invalidate('${key}','stored-secret-token')`);
+ assert.equal((await db.query<{token:unknown}>(`select portfolio_kis_session_read('${key}') as token`)).rows[0]?.token,null);
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_claim('${key}','${owner}') as ok`)).rows[0]?.ok,false);
+ await db.exec(`update portfolio_private.kis_sessions set retry_after=now()-interval '1 second' where key_id='${key}'`);
+ assert.equal((await db.query<{ok:boolean}>(`select portfolio_kis_session_claim('${key}','${owner}') as ok`)).rows[0]?.ok,true);
  const one=await db.query<{result:boolean}>(`select portfolio_claim_quote('US:NVDA',60) as result`);
  const two=await db.query<{result:boolean}>(`select portfolio_claim_quote('US:NVDA',60) as result`);
  assert.equal(one.rows[0]?.result,true);assert.equal(two.rows[0]?.result,false);
@@ -38,5 +55,6 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  assert.equal((await db.query<{result:boolean}>(`select portfolio_claim_budget('US',1,60) as result`)).rows[0]?.result,true);
  await db.exec('reset role;set role anon;');
  await assert.rejects(()=>db.query('select * from portfolio_holdings_read'));
+ await assert.rejects(()=>db.query(`select portfolio_kis_session_read('${key}')`));
  await db.close();
 });

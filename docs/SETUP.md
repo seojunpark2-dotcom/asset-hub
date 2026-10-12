@@ -1,3 +1,9 @@
+# api 브랜치 1.4.0 설정
+
+[한국투자 최초 설정](KIS_API.md)을 먼저 확인하세요. 새 함수 portfolio-quotes-kis와 신규 마이그레이션은 asset-hub 서버에 배포했습니다. 기존 portfolio-quotes는 변경하지 않았습니다. 새 환경에서만 마이그레이션을 적용하고 portfolio-quotes-kis를 배포하세요. api APK 빌드는 gh workflow run android-apk.yml --ref api --repo seojunpark2-dotcom/asset-hub로 실행합니다. 아래 기존 공급자 배포 명령은 master용 기록입니다.
+
+---
+
 # Supabase 연결과 Android APK 설치
 
 ## 1. 계정 연결

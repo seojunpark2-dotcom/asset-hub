@@ -2,6 +2,7 @@ export interface Quote {
   symbol: string; market: string; currency: string; current_price: string;
   updated_at: string; fetched_at: string; source: string; delayed: boolean;
   stale?: boolean; error?: string;
+  time_basis?: 'retrieved';
 }
 export interface Instrument { symbol: string; market: string; asset_type?: string; }
 export interface Provider { supports(i: Instrument): boolean; ttl: number; get(i: Instrument): Promise<Quote>; }

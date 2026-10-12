@@ -11,7 +11,9 @@ export interface Quote {
   symbol: string; market: Market; currency: Currency; current_price: string;
   updated_at: string; fetched_at: string; source: string;
   delayed: boolean; stale?: boolean; error?: string;
+  time_basis?: 'retrieved';
 }
+export interface KisStatus {configured:boolean;tokenExpiresAt:string|null;}
 export interface Settings { dark: boolean; interval: number; colors: 'kr' | 'global'; apiExpiry?: {date:string;enabled:boolean;lastNotifiedOn?:string;autoAdvancedFrom?:string}; }
 export const assetLabels: Record<AssetType, string> = {
   domestic_stock: '국내주식', foreign_stock: '미국주식', domestic_etf: '국내상장 ETF', foreign_etf: '미국상장 ETF', crypto: '암호화폐',

@@ -1,3 +1,9 @@
+# api 브랜치 1.4.0 안내
+
+국내주식·ETF는 한국투자로 변경했습니다. [최초 계좌·키 설정과 자동 토큰 관리](KIS_API.md)를 따라 KIS_APP_KEY / KIS_APP_SECRET을 Supabase Secrets에 등록하세요. 신규 함수는 portfolio-quotes-kis입니다. 아래 공공데이터 안내는 master와 기존 APK에만 적용됩니다.
+
+---
+
 # 주식·ETF 시세 키 연결
 
 현재 앱은 Supabase 로그인/자산관리와 업비트 공개 시세가 연결되어 있습니다. 미국주식 및 국내 ETF는 아래 키를 서버에 추가하면 활성화됩니다. APK를 재설치할 필요는 없습니다.
