@@ -140,3 +140,18 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK: 42,427,951 bytes, 통합 자산관리, com.portfolio.assettracker, 1.3.3/versionCode 13. 위젯 native 코드·화면 리소스와 두 구분선 view ID 포함 확인.
 - 기존 인증서 일치·v2 서명 확인. SHA256 13A5C398C9CF918CC277C79727BBA21EE9DCE5386CB0D9161F984F4A3BADF224는 다운로드·확인 파일·GitHub digest와 일치.
 - 직접 APK 이름은 asset-hub-1.3.3.apk이며 ZIP 안의 통합 자산관리 - 1.3.3.apk 이름과 동일 해시 확인. GitHub 파일명 정규화 제약으로 한글 이름은 ZIP 안에 보존. 실제 휴대폰 화면은 직접 확인하지 않음.
+
+## Yahoo Finance 국내 ETF · 2026-10-12
+- MINOR 1.5.0 / versionCode 15. codex/yahoo-finance 소스 e86a9fd5a578b54cdbef3fc5975d06a69e2014cb. master cf6c1f61517e7dcfa84b64204c4fd4fba797ea72 유지.
+- TypeScript 및 앱 테스트 28개 통과. Yahoo ETF 코드·KRW·ETF 종류·거래소·가격·기준시각 검증, 5분 캐시 재사용, 429 시 stale 표시 및 가짜 가격 없음, 가격 변경 → 평가손익·원금 대비 수익률·합산·위젯 값을 검증.
+- Yahoo 실제 가격 360750.KS 25,945 KRW / 2026-10-12T06:30:17Z 확인. 같은 직접 조회 모듈로 실제 가격과 10주·원금 200,000원의 평가손익 59,450원 계산 검증. 379800.KS / 133690.KS도 실제 응답 확인.
+- Supabase 서버 직접 Yahoo 조회는 HTTP 429 실패를 확인. 휴대폰 직접 조회로 전환. 실제 Supabase Auth/CRUD/RLS, 신규 함수의 소유 ETF 목록 반환, 업비트 시세, 익명 요청 거부, 신규 캐시 직접 읽기 차단 확인. 임시 사용자 2명과 데이터 삭제 완료.
+- Yahoo 함수는 기존 portfolio-quotes 및 KIS 함수를 덮어쓰지 않음. 신규 서버 캐시와 잠금 이름 분리. KIS 마이그레이션은 서버 이력 일치용으로 보존하며 Yahoo 앱은 KIS 키·토큰을 사용하지 않음.
+- 가격 출처와 실제 시세시각을 유지하고 지연 가능 시세로 표시. 오래된 실제 시세는 stale로 남기며 데이터가 없으면 수익률을 만들지 않음.
+- 기존 공공데이터 만료 알림 UI 제거 및 로그인 시 예약 해제. 실제 휴대폰 설치·네트워크 Yahoo 조회·알림 해제는 아직 미확인.
+- 신규 캐시는 RLS·권한 차단으로 service_role 전용. 정책 없음 INFO는 의도된 접근 차단. 기존 leaked password protection WARN은 유지. 공식 대응 링크는 docs/YAHOO_FINANCE.md 참고.
+
+- GitHub Actions run 38264573897: 앱·네이티브 검사, APK 생성·기존 서명 검증·업로드 성공. Latest v1.5.0 및 소스 태그 e86a9fd5a578b54cdbef3fc5975d06a69e2014cb 일치.
+- 다운로드 APK 42439499 bytes / 통합 자산관리 / com.portfolio.assettracker / 1.5.0 / versionCode 15. Yahoo 직접 조회 경로와 신규 서버 엔드포인트 번들, 기존 위젯 코드·리소스 확인.
+- SHA256 a0e8048cceae2fc25373d6354aa0641faccf0111a303a5c5d5e18159f36a265d는 다운로드·확인 파일·GitHub digest·ZIP 내부 APK와 일치. 기존 인증서 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada / v2 서명 검증.
+- GitHub 파일명 정규화로 직접 APK는 asset-hub-1.5.0.apk, ZIP 내부는 통합 자산관리 - 1.5.0.apk. 실제 휴대폰 설치·해당 네트워크의 Yahoo 조회는 미확인.
