@@ -48,7 +48,7 @@ jobs:
         run: npx expo prebuild --platform android --no-install
       - name: Android SDK
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ''platforms;android-36'' ''build-tools;36.0.0'' ''ndk;27.1.12297006'''
-      - name: Native notification tests
+      - name: Native widget and upgrade cleanup tests
         working-directory: android
         run: |
           chmod +x gradlew

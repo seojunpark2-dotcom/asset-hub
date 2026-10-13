@@ -5,12 +5,12 @@ import type { Session } from '@supabase/supabase-js';
 import { configured, supabase } from './src/supabase';
 import { Holding, Quote, Settings, assetLabels, marketOf, quoteKey } from './src/types';
 import { valueHolding, summarize, money, pct, signedMoney, Valuation } from './src/finance';
-import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, cacheSettings, clearCache } from './src/portfolio';
+import { cachedHoldings, loadHoldings, deleteHolding, getQuotes, readQuotes, cacheQuotes, loadSettings, saveSettings, clearCache } from './src/portfolio';
 import { ThemeContext, Theme, Button, Card, Label, Field, Choices, useTheme } from './src/ui';
 import { HoldingForm } from './src/HoldingForm';
 import { Analysis } from './src/Charts';
-import { NotificationSettings } from './src/ApiExpirySettings';
-import { Notifications, cancelExpiryNotifications } from './src/expiryNotifications';
+import { NotificationSettings } from './src/NotificationSettings';
+import { cleanupLegacyNotifications } from './src/legacyCleanup';
 import {widgetSnapshot} from './src/widgetData';
 import {setWidgetUser,syncPortfolioWidget,pinPortfolioWidget} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
@@ -63,7 +63,7 @@ function Portfolio({session}: {session:Session}) {
   const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');const [ready,setReady]=useState(false);
   const [form,setForm]=useState<Holding|true|null>(null);const [selected,setSelected]=useState<string|null>(null);
   const [sort,setSort]=useState('value');const running=useRef(false);const mounted=useRef(true);const quoteRef=useRef(quotes);
-  useEffect(()=>{void cancelExpiryNotifications(userId).catch(()=>{if(mounted.current)setNotice('기존 공공데이터 만료 알림 해제에 실패했습니다. 앱을 다시 열어주세요.');});},[userId]);
+  useEffect(()=>{void cleanupLegacyNotifications().catch(()=>{if(mounted.current)setNotice('이전 알림 정리에 실패했습니다. 앱을 다시 열어주세요.');});},[userId]);
   useEffect(()=>{quoteRef.current=quotes;},[quotes]);
   const refresh=useCallback(async()=>{
     if(running.current||!mounted.current)return;running.current=true;setBusy(true);
@@ -107,13 +107,10 @@ function Portfolio({session}: {session:Session}) {
     return sort==='low'?a.percent.cmp(b.percent):b.percent.cmp(a.percent);
   });
   useEffect(()=>{
-    const open=(response:Notifications.NotificationResponse|null)=>{if(response?.notification.request.content.data?.kind==='api-expiry')setTab('설정');};
-    open(Notifications.getLastNotificationResponse());
-    const listener=Notifications.addNotificationResponseReceivedListener(open);
-    const openUrl=(url:string|null)=>{if(url?.startsWith('assethub://expiry'))setTab('설정');if(url?.startsWith('assethub://widget')){setTab('홈');void refresh();}};
+    const openUrl=(url:string|null)=>{if(url?.startsWith('assethub://widget')){setTab('홈');void refresh();}};
     void Linking.getInitialURL().then(openUrl);
     const link=Linking.addEventListener('url',event=>openUrl(event.url));
-    return()=>{listener.remove();link.remove();};
+    return()=>{link.remove();};
   },[refresh]);
   const detail=rows.find(r=>r.h.id===selected);
   function remove(h:Holding){
@@ -144,14 +141,14 @@ function Portfolio({session}: {session:Session}) {
         <Label bold size={20}>금융기관별 자산</Label>
         {banks.map(({bank,summary:s})=><Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>)}
       </>}
-      {tab==='설정'?<Card><Label bold>국내 ETF 시세 · Yahoo Finance</Label><Label muted>국내 ETF는 휴대폰에서 야후 파이낸스로 직접 조회합니다. 별도 API 키나 계좌 등록은 필요하지 않습니다. 가격은 5분간 재사용하며 지연 시세일 수 있습니다. 종목별 가격 기준시각을 확인하세요.</Label></Card>:null}
+      {tab==='설정'?<Card><Label bold>국내 주식·ETF 시세 · Yahoo Finance</Label><Label muted>국내 주식과 ETF는 휴대폰에서 야후 파이낸스로 직접 조회합니다. 별도 API 키나 계좌 등록은 필요하지 않습니다. 가격은 5분간 재사용하며 지연 시세일 수 있습니다. 종목별 가격 기준시각을 확인하세요.</Label></Card>:null}
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
         <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱이 화면에 표시될 때만 자동 갱신합니다. ETF와 기준환율은 일별 데이터이며 서버가 공급자별로 캐시합니다.</Label></Card>
         <NotificationSettings/>
         <Card><Label bold>보유자산 위젯</Label><Label muted size={12}>총평가금액, 전체 평가손익·수익률, 종목별 수익률을 홈 화면에서 확인합니다. 목록은 스크롤할 수 있습니다. 앱에서 조회한 최근 데이터를 표시하며 위젯을 누르면 앱을 열어 갱신합니다.</Label><Button title="홈 화면에 위젯 추가" onPress={()=>void pinPortfolioWidget().then(requested=>Alert.alert('위젯 추가',requested?'휴대폰에서 위젯 추가를 확인해주세요.':'홈 화면의 빈 공간을 길게 누른 뒤 위젯 → 통합 자산관리 → 보유자산을 선택해주세요.')).catch(e=>Alert.alert('위젯 추가',errorMessage(e)))}/></Card>
-        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cancelExpiryNotifications(userId);await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
+        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cleanupLegacyNotifications();await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
         <Card><Label bold>데이터 관리</Label><Button secondary title="기기 캐시 삭제" onPress={()=>void(async()=>{try{await clearCache(userId);setQuotes({});quoteRef.current={};setHoldings([]);await refresh();}catch(e){Alert.alert('오류',errorMessage(e));}})()}/><Label muted size={12}>서버에 저장된 자산은 유지됩니다. 자산 삭제는 상세화면에서 가능합니다.</Label></Card>
         <Label muted size={12}>수수료·세금·배당 제외. 미국주식은 USD, 국내주식·ETF와 업비트는 KRW 기준입니다. 계좌 자동연동은 지원하지 않습니다.</Label>
       </>}
@@ -168,7 +165,7 @@ export default function App(){
     if(!supabase){void setWidgetUser(null);setLoading(false);return;}
     let alive=true;
     void supabase.auth.getSession().then(({data,error})=>{if(alive){if(error)setFailure(error.message);authUser.current=data.session?.user.id??null;void setWidgetUser(authUser.current).catch(()=>{});setSession(data.session);setLoading(false);}}).catch(e=>{if(alive){void setWidgetUser(null).catch(()=>{});setFailure(errorMessage(e));setLoading(false);}});
-    const {data}=supabase.auth.onAuthStateChange((_event,next)=>{if(alive){const previous=authUser.current;if(previous&&previous!==next?.user.id)void cancelExpiryNotifications(previous).catch(()=>{});authUser.current=next?.user.id??null;void setWidgetUser(authUser.current).catch(()=>{});setSession(next);}});
+    const {data}=supabase.auth.onAuthStateChange((_event,next)=>{if(alive){const previous=authUser.current;if(previous&&previous!==next?.user.id)void cleanupLegacyNotifications().catch(()=>{});authUser.current=next?.user.id??null;void setWidgetUser(authUser.current).catch(()=>{});setSession(next);}});
     if(AppState.currentState==='active')supabase.auth.startAutoRefresh();
     const listener=AppState.addEventListener('change',state=>{if(state==='active')supabase!.auth.startAutoRefresh();else supabase!.auth.stopAutoRefresh();});
     return()=>{alive=false;data.subscription.unsubscribe();listener.remove();supabase!.auth.stopAutoRefresh();};

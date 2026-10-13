@@ -11,6 +11,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class AssetExpiryModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("AssetExpiry")
+    OnCreate { appContext.reactContext?.let { LegacyCleanup.run(it) } }
     AsyncFunction("setWidgetUser") { userId: String -> PortfolioWidgetStore.setUser(requireNotNull(appContext.reactContext), userId) }
     AsyncFunction("updateWidget") { userId: String, json: String -> PortfolioWidgetStore.update(requireNotNull(appContext.reactContext), userId, json) }
     AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
@@ -20,10 +21,5 @@ class AssetExpiryModule : Module() {
         else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
       context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
-    AsyncFunction("read") { userId: String -> ExpiryAlarm.read(requireNotNull(appContext.reactContext), userId) }
-    AsyncFunction("configure") { userId: String, date: String, enabled: Boolean, manual: Boolean ->
-      ExpiryAlarm.configure(requireNotNull(appContext.reactContext), userId, date, enabled, manual)
-    }
-    AsyncFunction("cancel") { userId: String -> ExpiryAlarm.cancel(requireNotNull(appContext.reactContext), userId) }
   }
 }

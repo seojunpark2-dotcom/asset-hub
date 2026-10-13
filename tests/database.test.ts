@@ -16,8 +16,8 @@ test('PostgreSQL schema and RLS isolate users and protect quotes',async()=>{
  await db.exec(`insert into auth.users values ('${a}'),('${b}'); set role authenticated;select set_config('request.jwt.claim.sub','${a}',false);`);
  await db.exec(`insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
  values('${a}','키움증권','domestic_etf','360750','테스트 ETF',0.00000001,123456789,'KRW',1.23456789);`);
- await db.exec(`insert into portfolio_profiles(user_id,settings) values('${a}','{"dark":false,"interval":60,"colors":"kr","apiExpiry":{"date":"2028-10-11","enabled":true}}')`);
- assert.equal((await db.query<{settings:{apiExpiry:{date:string}}}>('select settings from portfolio_profiles')).rows[0]?.settings.apiExpiry.date,'2028-10-11');
+ await db.exec(`insert into portfolio_profiles(user_id,settings) values('${a}','{"dark":false,"interval":60,"colors":"kr"}')`);
+ assert.equal((await db.query<{settings:{dark:boolean}}>('select settings from portfolio_profiles')).rows[0]?.settings.dark,false);
  const own=await db.query<{quantity:string}>('select quantity from portfolio_holdings_read');
  assert.equal(own.rows[0]?.quantity,'0.00000001');
  await assert.rejects(()=>db.exec(`update portfolio_holdings set user_id='${b}'`));
