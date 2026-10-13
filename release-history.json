@@ -247,11 +247,35 @@
         "Latest and yahoo source commit tag verified; master and legacy function unchanged"
       ],
       "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
+    },
+    {
+      "version": "1.6.0",
+      "changeType": "minor",
+      "versionCode": 16,
+      "description": "국내 주식·ETF 전체 Yahoo 전환 및 폐기 공급자/만료 알림 구현 제거",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "91ad450eae6e6eea67d3b422177a5b8d442e1ef9",
+      "tag": "v1.6.0",
+      "releasedAt": "2026-10-13",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.6.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.6.0.apk",
+      "sha256": "751769d3aad1f09cf1e492346a0993dcc64fe6c0cc197ec55621f9e6f7304529",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.6.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.6.0/asset-hub-1.6.0.apk",
+      "checks": [
+        "TypeScript and 18 application tests passed",
+        "Native Android 28/33 widget and legacy upgrade cleanup tests passed",
+        "Live Yahoo KOSPI/KOSDAQ/ETF prices and portfolio profit verified",
+        "Supabase Auth/CRUD/RLS and domestic ownership listing verified; test identities removed",
+        "Supabase direct Yahoo query returned HTTP 429; mobile direct retrieval implemented",
+        "Downloaded APK metadata, Yahoo domestic bundle/widget verified; retired provider and alarm classes absent",
+        "Existing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest; ZIP preserves Korean name",
+        "Latest and yahoo source commit tag verified; master and legacy function unchanged"
+      ],
+      "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.6.0",
-    "versionCode": 16
-  }
+  ]
 }
