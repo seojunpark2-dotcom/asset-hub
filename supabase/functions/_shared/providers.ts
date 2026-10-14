@@ -38,12 +38,5 @@ export function providers(env: Secrets): Provider[] {
       if(data.base!=='USD'||data.quote!=='KRW')throw new Error('환율 통화 오류');
       return quote(i,data.rate,data.date+'T00:00:00Z','Frankfurter · 일별 기준환율',true);
     }},
-    { supports:i=>i.market==='US',ttl:60,async get(i){
-      const key=env('FINNHUB_API_KEY');
-      if(!key)throw new Error('미국주식 시세 키를 서버에 설정하세요.');
-      const data=await json('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(i.symbol),{'X-Finnhub-Token':key});
-      if(!data.t)throw new Error('미국주식 시세를 확인할 수 없습니다.');
-      return quote(i,data.c,new Date(data.t*1000).toISOString(),'Finnhub · 최근 거래가격',true,'USD');
-    }},
   ];
 }

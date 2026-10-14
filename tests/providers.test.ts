@@ -8,10 +8,6 @@ test('Upbit provider selects exact market and retains price timestamp',async()=>
  const p=providers(()=>undefined).find(p=>p.supports({symbol:'KRW-BTC',market:'UPBIT'}))!;
  const q=await p.get({symbol:'KRW-BTC',market:'UPBIT'});assert.equal(q.current_price,'150000000');assert.equal(q.source,'Upbit');assert.ok(q.updated_at);
 });
-test('missing US key returns explicit configuration failure',async()=>{
- const p=providers(()=>undefined).find(p=>p.supports({symbol:'NVDA',market:'US'}))!;
- await assert.rejects(()=>p.get({symbol:'NVDA',market:'US'}),/키/);
-});
 test('provider failures and non-positive prices never produce fabricated quotes',async()=>{
  globalThis.fetch=async()=>new Response('unavailable',{status:429});
  const p=providers(()=>undefined).find(p=>p.supports({symbol:'KRW-BTC',market:'UPBIT'}))!;

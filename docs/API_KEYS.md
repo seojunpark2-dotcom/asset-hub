@@ -1,7 +1,5 @@
-# 현재 시세 API 설정
+# 현재 시세 설정 · 1.7.0
 
-국내 주식·ETF는 Yahoo Finance 휴대폰 직접 조회입니다. 키나 계좌 등록이 필요 없습니다. 업비트와 Frankfurter도 별도 키를 사용하지 않습니다.
+국내·미국 주식과 ETF는 Yahoo Finance 휴대폰 직접 조회입니다. 비트코인은 업비트, USD/KRW 환율은 Frankfurter입니다. 모든 시세 공급자에 별도 API 키나 증권사 계좌 등록이 필요 없습니다.
 
-미국주식에는 Finnhub 개인용 키가 필요합니다. Finnhub에서 발급받은 값을 Supabase asset-hub → Edge Functions → Secrets의 FINNHUB_API_KEY에 저장합니다. 키 값은 채팅·GitHub·앱 EXPO_PUBLIC_ 변수에 넣지 않습니다. 저장 후 새로고침하며 APK 재빌드는 필요 없습니다.
-
-현재 함수는 portfolio-quotes-yahoo-domestic입니다. 기존 배포본을 위한 이전 서버 함수·Secrets는 별개로 유지합니다. 새 앱의 국내 조회는 이전 공급자를 호출하지 않습니다. [전체 국내 조회 안내](YAHOO_FINANCE.md).
+앱의 Supabase URL과 공개 publishable key는 로그인·자산 저장을 위해 계속 필요합니다. 이 공개 설정을 삭제하지 마세요. 현재 서버 함수는 portfolio-quotes-yahoo-all입니다. 이전 배포본의 서버 함수·Secrets는 별개로 보존하며 새 앱은 Finnhub를 호출하지 않습니다. [전체 조회 안내](YAHOO_FINANCE.md).

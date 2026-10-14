@@ -25,7 +25,7 @@ Deno.serve(async(req)=>{
     const quotes:Quote[]=[];const errors:Record<string,string>={};
     // Sequential requests keep provider bursts below the personal-use limits.
     for(const [key,instrument] of instruments){
-      if(instrument.market==='KR')continue;
+      if(instrument.market==='KR'||instrument.market==='US')continue;
       const provider=available.find(p=>p.supports(instrument));
       if(!provider){errors[key]='지원하지 않는 시장입니다.';continue;}
       const {data:cached,error:cacheError}=await admin.from('portfolio_quote_cache_yahoo').select('*').eq('market',instrument.market).eq('symbol',instrument.symbol).maybeSingle();
@@ -34,7 +34,7 @@ Deno.serve(async(req)=>{
       const {data:claimed,error:lockError}=await admin.rpc('portfolio_claim_quote',{p_key:'yahoo:'+key,p_seconds:Math.min(provider.ttl,60)});
       if(lockError||!claimed){if(cached)quotes.push({...cached,stale:true});errors[key]='시세 갱신 대기 중입니다.';continue;}
       try {
-        const budgets:Record<string,[number,number]>={US:[55,60],UPBIT:[120,60],FX:[4,3600]};
+        const budgets:Record<string,[number,number]>={UPBIT:[120,60],FX:[4,3600]};
         const [limit,window]=budgets[instrument.market]!;
         const {data:budget,error:budgetError}=await admin.rpc('portfolio_claim_budget',{p_provider:instrument.market,p_limit:limit,p_window:window});
         if(budgetError||!budget){if(cached)quotes.push({...cached,stale:true});errors[key]='공급자 호출 한도에 도달했습니다. 잠시 후 갱신됩니다.';continue;}
@@ -47,6 +47,6 @@ Deno.serve(async(req)=>{
         errors[key]=instrument.symbol+': '+(e instanceof Error?e.message:'시세 조회 실패');
       }
     }
-    return respond({quotes,errors,yahooInstruments:[...instruments.values()].filter(i=>i.market==='KR')});
+    return respond({quotes,errors,yahooInstruments:[...instruments.values()].filter(i=>i.market==='KR'||i.market==='US')});
   }catch{return respond({error:'시세 서버 오류입니다. 잠시 후 다시 시도하세요.'},500);}
 });

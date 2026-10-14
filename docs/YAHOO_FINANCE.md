@@ -1,11 +1,11 @@
-# 국내 ETF Yahoo Finance 조회 · 1.6.0
+# 국내 ETF Yahoo Finance 조회 · 1.7.0
 
 국내 주식·ETF는 공공데이터포털 키나 한국투자 계좌 없이 조회합니다. 6자리 종목코드는 그대로 저장하고 Yahoo 요청에서 ETF는 `.KS`, 개별주식은 검증된 시장에 따라 `.KS` 또는 `.KQ`를 붙입니다. 예: TIGER 미국S&P500 `360750` → `360750.KS`. 미국 기초지수 가격으로 대체하지 않습니다.
 
 ## 동작
 
-1. 로그인한 앱이 `portfolio-quotes-yahoo-domestic`에 요청합니다. 서버는 JWT·사용자 RLS를 검증하고 등록된 국내 종목 목록을 반환합니다. 미국주식·업비트·환율은 기존 공급자로 조회합니다. 국내 개별주식도 Yahoo를 사용합니다.
-2. 국내 주식·ETF는 휴대폰 네트워크에서 Yahoo chart 응답을 직접 조회합니다. Supabase에서 직접 요청하면 실제 HTTP 429가 발생해 모바일 직접 조회를 사용합니다. 차단을 우회하는 프록시·인증 우회·쿠키 수집은 사용하지 않습니다.
+1. 로그인한 앱이 `portfolio-quotes-yahoo-all`에 요청합니다. 서버는 JWT·사용자 RLS를 검증하고 등록된 국내 종목 목록을 반환합니다. 국내·미국 주식과 ETF 목록을 반환하고 업비트·환율만 서버에서 조회합니다. 국내 개별주식도 Yahoo를 사용합니다.
+2. 국내·미국 주식·ETF는 휴대폰 네트워크에서 Yahoo chart 응답을 직접 조회합니다. Supabase에서 직접 요청하면 실제 HTTP 429가 발생해 모바일 직접 조회를 사용합니다. 차단을 우회하는 프록시·인증 우회·쿠키 수집은 사용하지 않습니다.
 3. 응답의 정확한 종목, 주식(EQUITY)·ETF 종류, KOSPI·KOSDAQ 거래소, KRW 통화, 양수 가격과 시세시각을 검증합니다. `regularMarketPrice`와 `regularMarketTime`을 사용하며 조회시각을 체결시각으로 만들지 않습니다.
 4. 시세를 기존 Decimal 원화 계산에 넣어 평가금액·평가손익·원금 대비 수익률·합산 수익률·도넛 비중·위젯을 갱신합니다. 매입단가·보유수량·원금은 변경하지 않습니다.
 5. 정상 조회 가격은 5분간 재사용합니다. 오류·429·미지원 종목은 안내하며 기존 정상 가격이 있으면 캐시 시세로 표시합니다. 없으면 0원이나 가짜 가격으로 수익률을 계산하지 않습니다.
@@ -31,3 +31,5 @@ Yahoo의 웹 데이터 경로는 영구 제공·호출 한도·실시간 가격�
 서버 캐시에는 RLS를 적용하고 anon/authenticated 직접 접근을 차단합니다. [의도된 서비스 역할 전용 테이블의 RLS 진단](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). 기존 [유출 비밀번호 보호 경고](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)는 기존 Auth 설정에 관한 항목이며 이번 변경으로 Auth 설정을 바꾸지 않습니다.
 
 국내 주식은 코스피 .KS의 주식 종류(EQUITY)와 거래소를 검증하고 미등록·다른 상품 종류일 때 코스닥 .KQ를 확인합니다. 429·연결 실패·통화/종목 오류에는 거래소를 바꾸어 재시도하지 않습니다. 코스닥의 정확한 주식이 확인되면 그 가격을 사용합니다.
+
+미국 종목은 접미사 없이 AAPL·VOO로 요청하고 종류주식의 점은 하이픈으로 변환합니다. 응답의 정확한 종목·USD 통화·미국 거래소 및 EQUITY/ETF 종류를 검증합니다. 정규장 regularMarketPrice를 사용하며 시간외 가격은 혼합하지 않습니다. USD 가격은 Frankfurter의 일별 기준환율로 원화 평가합니다. 국내 시장의 KRW 가격과 섞지 않습니다.

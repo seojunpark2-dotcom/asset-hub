@@ -32,7 +32,7 @@ export async function deleteHolding(h: Holding) {
   if (error) throw error;
 }
 export async function getQuotes(cached:Record<string,Quote>={}): Promise<{ quotes: Record<string, Quote>; errors: Record<string, string> }> {
-  const { data, error } = await db().functions.invoke('portfolio-quotes-yahoo-domestic', { body: {} });
+  const { data, error } = await db().functions.invoke('portfolio-quotes-yahoo-all', { body: {} });
   if (error) throw new Error('시세 서버에 연결하지 못했습니다. 마지막 정상 시세를 표시합니다.');
   const quotes: Record<string, Quote> = {};
   for (const q of (data.quotes ?? []) as Quote[]) {

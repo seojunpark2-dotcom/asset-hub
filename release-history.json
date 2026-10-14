@@ -277,5 +277,10 @@
       ],
       "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.7.0",
+    "versionCode": 17
+  }
 }
