@@ -12,7 +12,7 @@ import { Analysis } from './src/Charts';
 import { NotificationSettings } from './src/NotificationSettings';
 import { cleanupLegacyNotifications } from './src/legacyCleanup';
 import {widgetSnapshot} from './src/widgetData';
-import {setWidgetUser,syncPortfolioWidget,pinPortfolioWidget} from './src/portfolioWidget';
+import {setWidgetUser,syncPortfolioWidget,syncWidgetRefreshInput,pinPortfolioWidget} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
 const dark={bg:'#101723',card:'#1B2536',text:'#F4F7FC',muted:'#A2AFC3',line:'#2C384E',accent:'#6488FF',gain:'#FF727C',loss:'#65A4FF'};
 const defaults:Settings={dark:false,interval:60,colors:'kr'};
@@ -101,6 +101,7 @@ function Portfolio({session}: {session:Session}) {
   const rows=useMemo(()=>holdings.map(h=>valueHolding(h,quotes)),[holdings,quotes]);const total=summarize(rows);
   const banks=[...new Set(holdings.map(h=>h.institution))].map(bank=>({bank,summary:summarize(rows.filter(r=>r.h.institution===bank))})).sort((a,b)=>a.summary.value===null?(b.summary.value===null?0:1):b.summary.value===null?-1:b.summary.value.cmp(a.summary.value));
   useEffect(()=>{if(ready)void syncPortfolioWidget(userId,widgetSnapshot(rows,settings.colors)).catch(()=>setNotice('위젯 갱신에 실패했습니다. 앱에서 다시 조회해주세요.'));},[userId,rows,ready,settings.colors]);
+  useEffect(()=>{if(ready)void syncWidgetRefreshInput(userId,holdings,quotes,settings.colors).catch(()=>setNotice('위젯 자동 갱신 설정을 저장하지 못했습니다. 앱을 다시 열어주세요.'));},[userId,holdings,quotes,ready,settings.colors]);
   const ordered=[...rows].sort((a,b)=>{
     if(sort==='value')return (b.value?.toNumber()??-Infinity)-(a.value?.toNumber()??-Infinity);
     if(a.percent===null)return b.percent===null?0:1;if(b.percent===null)return -1;
@@ -145,7 +146,8 @@ function Portfolio({session}: {session:Session}) {
       {tab==='설정'&&<>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
-        <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱이 화면에 표시될 때만 자동 갱신합니다. ETF와 기준환율은 일별 데이터이며 서버가 공급자별로 캐시합니다.</Label></Card>
+        <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱 화면의 자동 갱신 간격입니다. 주식·ETF는 Yahoo 시세를 5분간 재사용하며 기준환율은 일별 데이터입니다.</Label></Card>
+        <Card><Label bold>위젯 자동 갱신</Label><Label>매일 자정 00:00 이후 · 한국 시간</Label><Label muted size={12}>위젯이 있으면 앱을 열지 않아도 하루 한 번 시세와 수익률을 갱신합니다. 절전이나 인터넷 연결 상태에 따라 늦어질 수 있습니다. 로그아웃하거나 위젯을 모두 삭제하면 중단합니다.</Label></Card>
         <NotificationSettings/>
         <Card><Label bold>보유자산 위젯</Label><Label muted size={12}>총평가금액, 전체 평가손익·수익률, 종목별 수익률을 홈 화면에서 확인합니다. 목록은 스크롤할 수 있습니다. 앱에서 조회한 최근 데이터를 표시하며 위젯을 누르면 앱을 열어 갱신합니다.</Label><Button title="홈 화면에 위젯 추가" onPress={()=>void pinPortfolioWidget().then(requested=>Alert.alert('위젯 추가',requested?'휴대폰에서 위젯 추가를 확인해주세요.':'홈 화면의 빈 공간을 길게 누른 뒤 위젯 → 통합 자산관리 → 보유자산을 선택해주세요.')).catch(e=>Alert.alert('위젯 추가',errorMessage(e)))}/></Card>
         <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cleanupLegacyNotifications();await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>

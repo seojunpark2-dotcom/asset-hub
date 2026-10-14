@@ -306,5 +306,10 @@
       ],
       "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.8.0",
+    "versionCode": 18
+  }
 }

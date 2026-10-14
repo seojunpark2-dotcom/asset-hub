@@ -14,11 +14,13 @@ import android.widget.RemoteViews
 import org.json.JSONObject
 
 class PortfolioWidgetProvider : AppWidgetProvider() {
-  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) { ids.forEach { updateOne(context, manager, it) } }
+  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) { ids.forEach { updateOne(context, manager, it) }; WidgetRefreshScheduler.ensure(context) }
+  override fun onEnabled(context: Context) { WidgetRefreshScheduler.ensure(context) }
+  override fun onDisabled(context: Context) { WidgetRefreshScheduler.cancel(context) }
   override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) { updateOne(context, manager, id) }
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) updateAll(context)
+    if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) { updateAll(context); WidgetRefreshScheduler.ensure(context) }
   }
   companion object {
     fun pin(context: Context): Boolean {

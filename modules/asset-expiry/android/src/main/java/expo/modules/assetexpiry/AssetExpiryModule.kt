@@ -14,6 +14,7 @@ class AssetExpiryModule : Module() {
     OnCreate { appContext.reactContext?.let { LegacyCleanup.run(it) } }
     AsyncFunction("setWidgetUser") { userId: String -> PortfolioWidgetStore.setUser(requireNotNull(appContext.reactContext), userId) }
     AsyncFunction("updateWidget") { userId: String, json: String -> PortfolioWidgetStore.update(requireNotNull(appContext.reactContext), userId, json) }
+    AsyncFunction("setWidgetRefreshInput") { userId: String, json: String -> PortfolioWidgetStore.setRefreshInput(requireNotNull(appContext.reactContext), userId, json) }
     AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
     AsyncFunction("openNotificationSettings") {
       val context = requireNotNull(appContext.reactContext)

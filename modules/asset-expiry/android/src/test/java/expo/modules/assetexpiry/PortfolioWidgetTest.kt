@@ -4,6 +4,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.ListView
 import org.junit.Test
+import org.junit.Before
 import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -13,6 +14,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28, 33])
 class PortfolioWidgetTest {
+  @Before fun initializeWorkManager() {
+    androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication())
+  }
   private val payload = """{"totalValue":"₩350","totalProfit":"+₩50","totalPercent":"+16.67%","totalColor":"#FF727C","updatedAt":"2026-10-11T00:00:00.000Z","rows":[{"name":"ETF A","institution":"키움증권","percent":"+50.00%","color":"#FF727C"}]}"""
   @Test fun logoutAndAccountSwitchClearSnapshotAndRejectLateWrites() {
     val context = RuntimeEnvironment.getApplication()
