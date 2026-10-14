@@ -170,3 +170,15 @@ npm audit에서 Expo/Metro 빌드 도구의 braces, node-forge 및 uuid 취약�
 - 다운로드 APK 42043023 bytes / 통합 자산관리 / com.portfolio.assettracker / 1.6.0 / versionCode 16. Yahoo 직접 조회 경로와 신규 서버 엔드포인트 번들, 기존 위젯 코드·리소스 확인.
 - SHA256 751769d3aad1f09cf1e492346a0993dcc64fe6c0cc197ec55621f9e6f7304529는 다운로드·확인 파일·GitHub digest·ZIP 내부 APK와 일치. 기존 인증서 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada / v2 서명 검증.
 - GitHub 파일명 정규화로 직접 APK는 asset-hub-1.6.0.apk, ZIP 내부는 통합 자산관리 - 1.6.0.apk. 실제 휴대폰 설치·해당 네트워크의 Yahoo 조회는 미확인.
+
+## 미국주식·미국 ETF Yahoo 전환 · 2026-10-14
+- MINOR 1.7.0 / versionCode 17. codex/yahoo-finance 소스 a81a301. 이후 이 앱의 작업 브랜치도 동일하게 유지하도록 AGENTS.md에 기록. master와 다른 브랜치는 변경하지 않음.
+- 타입 및 앱 테스트 20개 통과. 미국 거래소·USD·EQUITY/ETF·정규장 시각·가격 검증, BRK.B→BRK-B 변환과 저장 티커 보존을 검증. USD 110×2주×환율 1300=286,000원, 원금 200,000원 대비 손익 86,000원 / 수익률 43% 및 위젯 값 검증.
+- 실제 Yahoo AAPL 345.775 USD / VOO 710.09 USD 조회 확인. BRK-B의 NYQ/EQUITY/USD 응답도 확인. 인증된 서버가 사용자 국내·미국 목록과 환율을 반환하고 같은 직접 조회 모듈이 시세를 가져오는 실제 흐름 검증. 임시 사용자와 자산 삭제 완료.
+- 새 portfolio-quotes-yahoo-all 함수 배포, 기존 배포본 서버는 유지. 현재 코드에서 Finnhub 공급자를 제거했고 국내·미국 시장은 서버에서 외부 조회를 하지 않음. 업비트·Frankfurter·RLS·사용자 보유 데이터는 유지.
+- 시간외 가격을 정규장 가격에 섞지 않으며 5분 재사용/실패 시 실제 캐시·미확인 동작 유지. 실제 휴대폰 설치 및 해당 네트워크의 시세 조회 확인은 별도 필요.
+
+- GitHub Actions run 38583092145: 앱·네이티브 검사, APK 생성·기존 서명 검증·업로드 성공. Latest v1.7.0 및 소스 태그 a81a301576d801c5ab888109172f9b596da0de64 일치.
+- 다운로드 APK 42044031 bytes / 통합 자산관리 / com.portfolio.assettracker / 1.7.0 / versionCode 17. Yahoo 직접 조회 경로와 신규 서버 엔드포인트 번들, 기존 위젯 코드·리소스 확인.
+- SHA256 9f257d44ba7f811bcb07761ae3ce3e95909ce0e0f3e58202f0cc16b6908a507e는 다운로드·확인 파일·GitHub digest·ZIP 내부 APK와 일치. 기존 인증서 57c07158be546f5c1224a0f9af83bc7bf8ea8b237ab13746fe4095416a6b4ada / v2 서명 검증.
+- GitHub 파일명 정규화로 직접 APK는 asset-hub-1.7.0.apk, ZIP 내부는 통합 자산관리 - 1.7.0.apk. 실제 휴대폰 설치·해당 네트워크의 Yahoo 조회는 미확인.

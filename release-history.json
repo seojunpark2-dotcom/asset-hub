@@ -276,11 +276,35 @@
         "Latest and yahoo source commit tag verified; master and legacy function unchanged"
       ],
       "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
+    },
+    {
+      "version": "1.7.0",
+      "changeType": "minor",
+      "versionCode": 17,
+      "description": "미국주식·미국상장 ETF Yahoo 직접 조회 및 USD/환율 손익 반영",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "a81a301576d801c5ab888109172f9b596da0de64",
+      "tag": "v1.7.0",
+      "releasedAt": "2026-10-14",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.7.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.7.0.apk",
+      "sha256": "9f257d44ba7f811bcb07761ae3ce3e95909ce0e0f3e58202f0cc16b6908a507e",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.7.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.7.0/asset-hub-1.7.0.apk",
+      "checks": [
+        "TypeScript and 20 application tests passed",
+        "Native Android 28/33 widget and legacy upgrade cleanup tests passed",
+        "Live Yahoo domestic and US equity/ETF prices, FX and portfolio flow verified",
+        "Supabase Auth/CRUD/RLS and domestic ownership listing verified; test identities removed",
+        "Supabase direct Yahoo query returned HTTP 429; mobile direct retrieval implemented",
+        "Downloaded APK metadata, Yahoo domestic bundle/widget verified; retired provider and alarm classes absent",
+        "Existing certificate matched and v2 signature verified",
+        "Downloaded APK SHA256 matched sidecar and GitHub digest; ZIP preserves Korean name",
+        "Latest and yahoo source commit tag verified; master and legacy function unchanged"
+      ],
+      "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.7.0",
-    "versionCode": 17
-  }
+  ]
 }
