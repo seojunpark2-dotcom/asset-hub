@@ -305,11 +305,32 @@
         "Latest and yahoo source commit tag verified; master and legacy function unchanged"
       ],
       "deviceVerification": "not performed; Yahoo availability on phone network requires confirmation"
+    },
+    {
+      "version": "1.8.0",
+      "changeType": "minor",
+      "versionCode": 18,
+      "description": "WorkManager 한국 시간 자정 이후 일일 위젯 백그라운드 시세·수익률 갱신",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "893cae46f6d757e0d78c2ba48e89378842e4cf07",
+      "tag": "v1.8.0",
+      "releasedAt": "2026-10-15",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.8.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.8.0.apk",
+      "sha256": "e8e3bf9cb23a591b03e2d31a103d7e9d4e1f90c8fa5ebc6fbf659766efbb6da4",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.8.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.8.0/asset-hub-1.8.0.apk",
+      "checks": [
+        "TypeScript and 20 application tests passed",
+        "Native Android 28/33 widget, daily scheduling, logout, precision and stale-price tests passed",
+        "Downloaded APK version 1.8.0/code 18, native worker and WorkManager components verified",
+        "Original Android package and certificate matched; APK v2 signature verified",
+        "GitHub downloaded APK matches sidecar and uploaded digest; ZIP preserves Korean filename",
+        "Published Latest and tag source verified; master unchanged"
+      ],
+      "deviceVerification": "not performed; actual overnight refresh and battery usage require phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.8.0",
-    "versionCode": 18
-  }
+  ]
 }
