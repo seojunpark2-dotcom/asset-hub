@@ -117,7 +117,7 @@ object WidgetRefreshEngine {
     val rows = (0 until holdings.length()).map { i ->
       val h = holdings.getJSONObject(i); val q = quotes.optJSONObject(key(h))
       val usd = h.getString("purchase_currency") == "USD"; val fx = if (usd) quotes.optJSONObject("FX:USD/KRW") else null
-      val cost = price(h.getString("original_investment_krw"))
+      val cost = BigDecimal(h.getString("original_investment_krw")).also { require(it.signum() >= 0) }
       val value = if (q == null || (usd && fx == null)) null else price(q.getString("current_price"))
         .multiply(price(h.getString("quantity")), math).multiply(if (usd) price(fx!!.getString("current_price")) else BigDecimal.ONE, math)
       stale = stale || value == null || q?.optBoolean("stale", false) == true || fx?.optBoolean("stale", false) == true

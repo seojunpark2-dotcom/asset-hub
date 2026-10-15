@@ -58,6 +58,14 @@ class WidgetRefreshTest {
     assertEquals("+40.00%", snapshot.getJSONArray("rows").getJSONObject(0).getString("percent"))
     assertEquals("#FF727C", snapshot.getString("totalColor"))
   }
+  @Test fun zeroCostCoinHasUnknownReturnInsteadOfInfinity() {
+    val data = JSONObject().put("colors", "kr").put("holdings", JSONArray().put(holding("gift", "crypto", "KRW-BTC", "0.001", "0")))
+    val snapshot = WidgetRefreshEngine.snapshot(data, JSONObject().put("UPBIT:KRW-BTC", q("100000000")))
+    assertEquals("₩100,000", snapshot.getString("totalValue"))
+    assertEquals("+₩100,000", snapshot.getString("totalProfit"))
+    assertEquals("—", snapshot.getString("totalPercent"))
+    assertEquals("—", snapshot.getJSONArray("rows").getJSONObject(0).getString("percent"))
+  }
   @Test fun failureRetainsRealPriceAndMissingFxDoesNotFabricateTotals() {
     val data = input().put("quotes", JSONObject().put("KR:360750", q("25000")))
     val failed = WidgetRefreshEngine.refresh(data, fetchQuote = { throw IllegalStateException() }, fetchFx = { throw IllegalStateException() })

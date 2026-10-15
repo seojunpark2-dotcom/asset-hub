@@ -23,7 +23,7 @@ export function valueHolding(h: Holding, quotes: Record<string, Quote>) {
   const value = decimal(quote.current_price).mul(h.quantity).mul(currentFx);
   const profit = value.minus(cost);
   const percent = cost.gt(0) ? profit.div(cost).mul(100) : null;
-  const purchaseFx = cost.div(decimal(h.average_purchase_price).mul(h.quantity));
+  const purchaseFx = h.purchase_currency==='KRW'?decimal(1):cost.div(decimal(h.average_purchase_price).mul(h.quantity));
   const stockProfit = decimal(quote.current_price).minus(h.average_purchase_price).mul(h.quantity).mul(purchaseFx);
   const fxProfit = decimal(quote.current_price).mul(h.quantity).mul(currentFx.minus(purchaseFx));
   return { h, cost, value, profit, percent, quote, fx, stockProfit, fxProfit };

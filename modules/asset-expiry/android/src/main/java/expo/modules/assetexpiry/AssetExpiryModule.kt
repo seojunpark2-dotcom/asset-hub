@@ -15,6 +15,9 @@ class AssetExpiryModule : Module() {
     AsyncFunction("setWidgetUser") { userId: String -> PortfolioWidgetStore.setUser(requireNotNull(appContext.reactContext), userId) }
     AsyncFunction("updateWidget") { userId: String, json: String -> PortfolioWidgetStore.update(requireNotNull(appContext.reactContext), userId, json) }
     AsyncFunction("setWidgetRefreshInput") { userId: String, json: String -> PortfolioWidgetStore.setRefreshInput(requireNotNull(appContext.reactContext), userId, json) }
+    AsyncFunction("prepareWidgetAccountSync") { userId: String, url: String, key: String -> WidgetAccountSync.prepare(requireNotNull(appContext.reactContext), userId, url, key) }
+    AsyncFunction("clearWidgetAccountSync") { WidgetAccountSync.clear(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("setWidgetAccountAuthorization") { userId: String, token: String -> WidgetAccountSync.setAuthorization(requireNotNull(appContext.reactContext), userId, token) }
     AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
     AsyncFunction("openNotificationSettings") {
       val context = requireNotNull(appContext.reactContext)

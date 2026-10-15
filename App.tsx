@@ -12,7 +12,9 @@ import { Analysis } from './src/Charts';
 import { NotificationSettings } from './src/NotificationSettings';
 import { cleanupLegacyNotifications } from './src/legacyCleanup';
 import {widgetSnapshot} from './src/widgetData';
-import {setWidgetUser,syncPortfolioWidget,syncWidgetRefreshInput,pinPortfolioWidget} from './src/portfolioWidget';
+import {AccountConnections} from './src/AccountConnections';
+import {syncAccounts} from './src/accounts';
+import {setWidgetUser,syncPortfolioWidget,syncWidgetRefreshInput,pinPortfolioWidget,registerWidgetAccountSync,clearWidgetAccountSync} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
 const dark={bg:'#101723',card:'#1B2536',text:'#F4F7FC',muted:'#A2AFC3',line:'#2C384E',accent:'#6488FF',gain:'#FF727C',loss:'#65A4FF'};
 const defaults:Settings={dark:false,interval:60,colors:'kr'};
@@ -51,7 +53,7 @@ function Detail({row,total,onEdit,onDelete,onClose}: {row:Valuation;total:Return
   return <ScrollView contentContainerStyle={{padding:20,gap:18}}><Label bold size={28}>{row.h.name}</Label><Card>{fields.map(([label,value])=><View key={label} style={{flexDirection:'row',justifyContent:'space-between',gap:10}}><Label muted>{label}</Label><Label bold>{value}</Label></View>)}</Card>
     <Card><Label muted size={12}>시세 출처: {row.quote?.source??'조회 전'}{ '\n' }가격 기준: {row.quote?new Date(row.quote.updated_at).toLocaleString('ko-KR'):'—'}{ '\n' }조회 시각: {row.quote?new Date(row.quote.fetched_at).toLocaleString('ko-KR'):'—'}{ '\n' }{row.quote?.stale?'캐시 가격입니다. 최신 조회에 실패했습니다.':row.quote?.delayed?'일별 또는 지연 데이터입니다.':'공급자의 최근 거래가격입니다.'}</Label>{row.fx&&<Label muted size={12}>환율 기준일: {row.fx.updated_at.slice(0,10)} · 일별 기준환율</Label>}</Card>
     <Label muted size={12}>수수료·세금·배당은 계산에서 제외합니다. 주가/환율 손익은 원화 원금으로부터 산출한 매입 환율을 기준으로 분해합니다.</Label>
-    <Button title="자산 수정" onPress={onEdit}/><Button title="자산 삭제" secondary onPress={onDelete}/><Button title="닫기" secondary onPress={onClose}/>
+    {row.h.connection_id?<Label muted>계좌에서 자동으로 관리하는 자산입니다. 수량·매입원금은 계좌 동기화로 변경됩니다.</Label>:<><Button title="자산 수정" onPress={onEdit}/><Button title="자산 삭제" secondary onPress={onDelete}/></>}<Button title="닫기" secondary onPress={onClose}/>
   </ScrollView>;
 }
 function Portfolio({session}: {session:Session}) {
@@ -69,6 +71,7 @@ function Portfolio({session}: {session:Session}) {
     if(running.current||!mounted.current)return;running.current=true;setBusy(true);
     const notices:string[]=[];
     try {
+      try{const sync=await syncAccounts();notices.push(...Object.values(sync.errors));}catch(e){notices.push(errorMessage(e));}
       try {const data=await loadHoldings(userId);if(mounted.current)setHoldings(data);}catch(e){notices.push('자산 동기화에 실패했습니다. 저장된 데이터를 표시합니다.');}
       try {
         const result=await getQuotes(quoteRef.current);
@@ -101,7 +104,7 @@ function Portfolio({session}: {session:Session}) {
   const rows=useMemo(()=>holdings.map(h=>valueHolding(h,quotes)),[holdings,quotes]);const total=summarize(rows);
   const banks=[...new Set(holdings.map(h=>h.institution))].map(bank=>({bank,summary:summarize(rows.filter(r=>r.h.institution===bank))})).sort((a,b)=>a.summary.value===null?(b.summary.value===null?0:1):b.summary.value===null?-1:b.summary.value.cmp(a.summary.value));
   useEffect(()=>{if(ready)void syncPortfolioWidget(userId,widgetSnapshot(rows,settings.colors)).catch(()=>setNotice('위젯 갱신에 실패했습니다. 앱에서 다시 조회해주세요.'));},[userId,rows,ready,settings.colors]);
-  useEffect(()=>{if(ready)void syncWidgetRefreshInput(userId,holdings,quotes,settings.colors).catch(()=>setNotice('위젯 자동 갱신 설정을 저장하지 못했습니다. 앱을 다시 열어주세요.'));},[userId,holdings,quotes,ready,settings.colors]);
+  useEffect(()=>{if(ready)void syncWidgetRefreshInput(userId,holdings,quotes,settings.colors).then(()=>registerWidgetAccountSync(userId)).catch(()=>setNotice('위젯 계좌 동기화 설정을 저장하지 못했습니다. 앱을 다시 열어주세요.'));},[userId,holdings,quotes,ready,settings.colors]);
   const ordered=[...rows].sort((a,b)=>{
     if(sort==='value')return (b.value?.toNumber()??-Infinity)-(a.value?.toNumber()??-Infinity);
     if(a.percent===null)return b.percent===null?0:1;if(b.percent===null)return -1;
@@ -144,15 +147,16 @@ function Portfolio({session}: {session:Session}) {
       </>}
       {tab==='설정'?<Card><Label bold>주식·ETF 시세 · Yahoo Finance</Label><Label muted>국내·미국 주식과 ETF는 휴대폰에서 야후 파이낸스로 직접 조회합니다. 별도 API 키나 계좌 등록은 필요하지 않습니다. 가격은 5분간 재사용하며 지연 시세일 수 있습니다. 종목별 가격 기준시각을 확인하세요.</Label></Card>:null}
       {tab==='설정'&&<>
+        <AccountConnections onSynced={refresh}/>
         <Card><Label bold>화면 모드</Label><Choices items={[{value:'light',label:'라이트'},{value:'dark',label:'다크'}]} value={settings.dark?'dark':'light'} onChange={v=>void updateSettings({...settings,dark:v==='dark'})}/>
         <Label bold>수익·손실 색상</Label><Choices items={[{value:'kr',label:'수익 빨강 · 손실 파랑'},{value:'global',label:'수익 초록 · 손실 빨강'}]} value={settings.colors} onChange={v=>void updateSettings({...settings,colors:v as Settings['colors']})}/></Card>
         <Card><Label bold>시세 갱신 간격</Label><Choices items={[60,300,900].map(n=>({value:String(n),label:n===60?'1분':n/60+'분'}))} value={String(settings.interval)} onChange={v=>void updateSettings({...settings,interval:Number(v)})}/><Label muted size={12}>앱 화면의 자동 갱신 간격입니다. 주식·ETF는 Yahoo 시세를 5분간 재사용하며 기준환율은 일별 데이터입니다.</Label></Card>
         <Card><Label bold>위젯 자동 갱신</Label><Label>매일 자정 00:00 이후 · 한국 시간</Label><Label muted size={12}>위젯이 있으면 앱을 열지 않아도 하루 한 번 시세와 수익률을 갱신합니다. 절전이나 인터넷 연결 상태에 따라 늦어질 수 있습니다. 로그아웃하거나 위젯을 모두 삭제하면 중단합니다.</Label></Card>
         <NotificationSettings/>
         <Card><Label bold>보유자산 위젯</Label><Label muted size={12}>총평가금액, 전체 평가손익·수익률, 종목별 수익률을 홈 화면에서 확인합니다. 목록은 스크롤할 수 있습니다. 앱에서 조회한 최근 데이터를 표시하며 위젯을 누르면 앱을 열어 갱신합니다.</Label><Button title="홈 화면에 위젯 추가" onPress={()=>void pinPortfolioWidget().then(requested=>Alert.alert('위젯 추가',requested?'휴대폰에서 위젯 추가를 확인해주세요.':'홈 화면의 빈 공간을 길게 누른 뒤 위젯 → 통합 자산관리 → 보유자산을 선택해주세요.')).catch(e=>Alert.alert('위젯 추가',errorMessage(e)))}/></Card>
-        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cleanupLegacyNotifications();await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
+        <Card><Label bold>내 계정</Label><Label muted>{session.user.email}</Label><Button secondary title="로그아웃" onPress={()=>void(async()=>{try{await cleanupLegacyNotifications();await clearWidgetAccountSync().catch(()=>{});await clearCache(userId);const {error}=await supabase!.auth.signOut({scope:'local'});if(error)throw error;}catch(e){Alert.alert('로그아웃 실패',errorMessage(e));}})()}/></Card>
         <Card><Label bold>데이터 관리</Label><Button secondary title="기기 캐시 삭제" onPress={()=>void(async()=>{try{await clearCache(userId);setQuotes({});quoteRef.current={};setHoldings([]);await refresh();}catch(e){Alert.alert('오류',errorMessage(e));}})()}/><Label muted size={12}>서버에 저장된 자산은 유지됩니다. 자산 삭제는 상세화면에서 가능합니다.</Label></Card>
-        <Label muted size={12}>수수료·세금·배당 제외. 미국주식은 USD, 국내주식·ETF와 업비트는 KRW 기준입니다. 계좌 자동연동은 지원하지 않습니다.</Label>
+        <Label muted size={12}>수수료·세금·배당 제외. 미국주식은 USD, 국내주식·ETF와 업비트는 KRW 기준입니다. 자동 연동 자산의 수량·매입원금은 계좌 동기화로 변경됩니다.</Label>
       </>}
     </ScrollView>
     <View style={{flexDirection:'row',backgroundColor:theme.card,borderTopWidth:1,borderTopColor:theme.line,paddingVertical:12}}>{['홈','자산','분석','설정'].map((name,i)=><Pressable key={name} accessibilityRole="tab" accessibilityState={{selected:tab===name}} onPress={()=>setTab(name)} style={{flex:1,alignItems:'center',paddingVertical:5,gap:3}}><Label size={21} color={tab===name?theme.accent:theme.muted}>{['⌂','▤','◉','⚙'][i]}</Label><Label bold size={12} color={tab===name?theme.accent:theme.muted}>{name}</Label></Pressable>)}</View>

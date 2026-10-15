@@ -48,10 +48,17 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Worker(c
     WidgetRefreshScheduler.ensure(applicationContext)
     if (state.optString("lastSuccessDay") == day) return Result.success()
     return try {
-      val result = WidgetRefreshEngine.refresh(state.getJSONObject("input"), stopped = { isStopped })
+      val input = state.getJSONObject("input")
+      var accountsComplete = true
+      try {
+        val accounts = WidgetAccountSync.holdings(applicationContext, state.getString("userId"))
+        if (accounts != null) { input.put("holdings", accounts.getJSONArray("holdings")); accountsComplete = accounts.optBoolean("ok", false) }
+      } catch (_: Exception) { accountsComplete = false }
+      val result = WidgetRefreshEngine.refresh(input, stopped = { isStopped })
       if (isStopped) return Result.success()
-      val accepted = PortfolioWidgetStore.commitRefresh(applicationContext, state, result.snapshot, result.quotes, day, result.complete)
-      if (accepted && !result.complete && runAttemptCount < 2) Result.retry() else Result.success()
+      val complete = result.complete && accountsComplete
+      val accepted = PortfolioWidgetStore.commitRefresh(applicationContext, state, result.snapshot, result.quotes, day, complete, input.getJSONArray("holdings"))
+      if (accepted && !complete && runAttemptCount < 2) Result.retry() else Result.success()
     } catch (_: Exception) {
       // Do not replace the last real snapshot with zero values on connectivity failures.
       if (!isStopped && runAttemptCount < 2) Result.retry() else Result.success()

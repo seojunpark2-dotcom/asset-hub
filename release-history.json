@@ -332,5 +332,10 @@
       ],
       "deviceVerification": "not performed; actual overnight refresh and battery usage require phone verification"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.9.0",
+    "versionCode": 19
+  }
 }

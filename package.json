@@ -20,7 +20,7 @@
     "typescript": "6.0.3"
   },
   "name": "asset-hub",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -28,7 +28,8 @@
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "build:apk": "gh workflow run android-apk.yml --ref codex/yahoo-finance --repo seojunpark2-dotcom/asset-hub",
+    "build:apk": "gh workflow run android-apk.yml --ref connect --repo seojunpark2-dotcom/asset-hub",
+    "accounts:server": "node --env-file=server/.env server/start.ts",
     "version:bump": "node scripts/version.cjs bump",
     "version:check": "node scripts/version.cjs check"
   }

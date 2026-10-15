@@ -1,0 +1,3 @@
+{$ACCOUNT_DOMAIN} {
+  reverse_proxy gateway:8080
+}

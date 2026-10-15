@@ -17,6 +17,7 @@ object PortfolioWidgetStore {
   }
   @Synchronized fun setUser(context: Context, userId: String) {
     if (read(context).optString("userId") != userId || userId.isEmpty()) {
+      WidgetAccountSync.clear(context)
       write(context, JSONObject().put("userId", userId))
       PortfolioWidgetProvider.updateAll(context)
       WidgetRefreshScheduler.cancel(context)
@@ -45,11 +46,12 @@ object PortfolioWidgetStore {
     WidgetRefreshScheduler.ensure(context)
   }
   @Synchronized fun refreshState(context: Context): JSONObject = read(context)
-  @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean): Boolean {
+  @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean, holdings: org.json.JSONArray? = null): Boolean {
     val data = read(context)
     if (state.optString("userId").isEmpty() || data.optString("userId") != state.optString("userId") || data.optString("revision") != state.optString("revision")) return false
     data.put("snapshot", snapshot)
     data.getJSONObject("input").put("quotes", quotes)
+    if (holdings != null) data.getJSONObject("input").put("holdings", holdings)
     if (complete) data.put("lastSuccessDay", day)
     write(context, data)
     PortfolioWidgetProvider.updateAll(context)

@@ -2,6 +2,7 @@ export type AssetType = 'domestic_stock' | 'foreign_stock' | 'domestic_etf' | 'f
 export type Currency = 'KRW' | 'USD';
 export type Market = 'KR' | 'US' | 'UPBIT' | 'FX';
 export interface Holding {
+  connection_id?:string|null;
   id: string; user_id: string; institution: string; asset_type: AssetType;
   symbol: string; name: string; quantity: string; average_purchase_price: string;
   purchase_currency: Currency; purchase_exchange_rate: string | null;

@@ -23,6 +23,12 @@ export async function cachedHoldings(userId: string): Promise<Holding[]> {
   return cached ? JSON.parse(cached) : [];
 }
 export async function saveHolding(h: Omit<Holding, 'id'> & { id?: string }) {
+  if(h.connection_id)throw Error('자동 연동 자산은 계좌 동기화로 변경됩니다.');
+  if(!h.id&&['키움증권','업비트'].includes(h.institution)&&!h.asset_type.startsWith('foreign')){
+    const provider=h.institution==='키움증권'?'kiwoom':'upbit';
+    const {data,error}=await db().from('portfolio_connections').select('id').eq('user_id',h.user_id).eq('provider',provider).eq('enabled',true).maybeSingle();
+    if(error)throw error;if(data)throw Error('이 기관은 계좌에 자동 연동되어 있습니다. 연결을 해제하면 수동으로 추가할 수 있습니다.');
+  }
   const { error } = h.id ? await db().from('portfolio_holdings').update(h).eq('id', h.id).eq('user_id', h.user_id)
     : await db().from('portfolio_holdings').insert(h);
   if (error) throw error;
