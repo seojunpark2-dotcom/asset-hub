@@ -331,11 +331,35 @@
         "Published Latest and tag source verified; master unchanged"
       ],
       "deviceVerification": "not performed; actual overnight refresh and battery usage require phone verification"
+    },
+    {
+      "version": "1.9.0",
+      "changeType": "minor",
+      "versionCode": 19,
+      "description": "키움 국내 현금 주식·ETF 및 업비트 KRW 코인 자동 계좌 연동, 고정 IP 게이트웨이·자정 위젯 통합",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "1f8e0180a5de39593ef8397489397406ebe1dc9c",
+      "tag": "v1.9.0",
+      "releasedAt": "2026-10-15",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.9.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.9.0.apk",
+      "sha256": "66633af24abeb25f718a75019a9f08fb99803214ab38f9366982e4c61c4ca3b7",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.9.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.9.0/asset-hub-1.9.0.apk",
+      "checks": [
+        "TypeScript and 26 application/gateway/DB tests passed",
+        "Native Android 28/33 widget and zero-cost asset tests passed",
+        "Live isolated Auth test verified JWT gate, setup-required status, scoped device token and revocation; test users removed",
+        "Migration applied; no anon/app access to device table or snapshot write RPC; default JWT verification retained",
+        "Downloaded APK version 1.9.0/code 19, account screens and native encrypted device sync verified; server-only key config absent",
+        "Original package and signing certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and SHA256 sidecar; ZIP preserves Korean filename",
+        "Latest/tag source verified; main unchanged"
+      ],
+      "deviceVerification": "not performed; user fixed-IP gateway and broker keys not configured; real account sync remains pending",
+      "setupStatus": "requires user-owned static-IP HTTPS gateway, Kiwoom/Upbit keys and allowlisted server IP"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.9.0",
-    "versionCode": 19
-  }
+  ]
 }
