@@ -23,7 +23,7 @@ class HomeAccountTest {
     PortfolioWidgetStore.setUser(context, "current-owner")
     assertThrows(IllegalArgumentException::class.java) { HomeAccountSync.saveImported(context, "previous-owner", "kiwoom", "dummy-access", "dummy-secret") }
     assertThrows(IllegalArgumentException::class.java) { WidgetAccountSync.importCredentials(context, "previous-owner", "kiwoom", "a.b.c") }
-    assertFalse(HomeAccountSync.status(context).contains("dummy-secret"))
+    assertFalse(java.io.File(context.noBackupFilesDir, "portfolio-home-account.enc").exists())
   }
   @Test fun statusIncludesExecutionTimesAndUsedIpButNeverCredentialsOrBalances() {
     val r = JSONObject().put("enabled", true).put("access", "private-access").put("secret", "private-secret")
