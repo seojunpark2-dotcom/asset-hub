@@ -70,6 +70,8 @@ test('Account snapshots are atomic, owner-isolated, read-only to app users and s
   grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
   await db.exec(await readFile(new URL('../supabase/migrations/20261010091417_portfolio_schema.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/migrations/20261015132411_portfolio_account_connections.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../supabase/migrations/20261017082059_home_account_device_scope.sql',import.meta.url),'utf8'));
+  assert.equal((await db.query<{column_default:string}>("select column_default from information_schema.columns where table_name='portfolio_widget_devices' and column_name='local_snapshots'")).rows[0]?.column_default,'false');
   await db.exec(`insert into auth.users values('${a}'),('${b}');set role service_role;`);
   const positions=normalizeKiwoom([{stk_cd:'A360750',stk_nm:'ETF',rmnd_qty:'2',pur_amt:'40000'}],new Set(['360750']));
   await db.query('select portfolio_commit_account($1,$2,$3,true)',[a,'kiwoom',JSON.stringify(positions)]);

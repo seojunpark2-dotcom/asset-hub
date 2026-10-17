@@ -61,7 +61,9 @@ object WidgetAccountSync {
     require(authorization.split('.').size == 3)
     data.put("authorization", authorization);write(context, data)
   }
-  fun holdings(context: Context, userId: String): JSONObject? {
+  fun holdings(context: Context, userId: String, localOnly: Boolean = true): JSONObject? = request(context, userId,
+    JSONObject().put("action", if (localOnly) "local-background" else "background"))
+  fun request(context: Context, userId: String, body: JSONObject): JSONObject? {
     val data = read(context) ?: if (file(context).baseFile.exists()) throw IllegalStateException("Widget device credential unavailable") else return null
     if (data.optString("userId") != userId) return null
     val connection = URI(data.getString("url")).toURL().openConnection() as HttpURLConnection
@@ -72,11 +74,11 @@ object WidgetAccountSync {
       connection.setRequestProperty("apikey", data.getString("apikey"))
       connection.setRequestProperty("Authorization", "Bearer " + data.getString("authorization"))
       connection.setRequestProperty("X-Widget-Token", data.getString("token"))
-      val body = JSONObject().put("action", "background").put("deviceId", data.getString("deviceId"))
+      body.put("deviceId", data.getString("deviceId"))
       connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-      check(connection.responseCode == 200)
+      check(connection.responseCode == 200) { "기기 연결 또는 자산 저장 실패. 앱에서 로그인 상태를 확인하세요." }
       val result = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-      require(result.optJSONArray("holdings") != null)
+      require(result.optJSONArray("holdings") != null || result.optBoolean("ok"))
       return result
     } finally { connection.disconnect() }
   }

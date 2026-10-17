@@ -1,7 +1,7 @@
 import {requireOptionalNativeModule} from 'expo';
 import {widgetSnapshot} from './widgetData';
 import type {Holding,Quote} from './types';
-import {accountRequest} from './accounts';
+import {accountRequest,homeAccounts} from './accounts';
 interface WidgetBridge {setWidgetUser(userId:string):Promise<void>;updateWidget(userId:string,json:string):Promise<void>;setWidgetRefreshInput(userId:string,json:string):Promise<void>;pinWidget():Promise<boolean>;prepareWidgetAccountSync(userId:string,url:string,key:string):Promise<string>;setWidgetAccountAuthorization(userId:string,token:string):Promise<void>;clearWidgetAccountSync():Promise<void>;}
 const native=requireOptionalNativeModule<WidgetBridge>('AssetExpiry');
 let currentUser:string|null=null;let queue:Promise<unknown>=Promise.resolve();
@@ -15,12 +15,13 @@ export function syncWidgetRefreshInput(userId:string,holdings:Holding[],quotes:R
  return serial(async()=>{if(currentUser===userId)await native?.setWidgetRefreshInput(userId,JSON.stringify({holdings:input,quotes,colors}));});
 }
 export function registerWidgetAccountSync(userId:string){return serial(async()=>{
- if(currentUser!==userId||registeredUser===userId||!native)return;
+ if(currentUser!==userId||!native)return;
+ if(registeredUser===userId){await homeAccounts?.ensureHomeAccounts();return;}
  const url=process.env.EXPO_PUBLIC_SUPABASE_URL;const key=process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  if(!url||!key)return;
  const data=JSON.parse(await native.prepareWidgetAccountSync(userId,url+'/functions/v1/portfolio-accounts',key));
- const result=await accountRequest<{backgroundAuth:string}>({action:'device',...data});
- if(currentUser===userId){await native.setWidgetAccountAuthorization(userId,result.backgroundAuth);registeredUser=userId;registeredDevice=data.deviceId;}
+ const result=await accountRequest<{backgroundAuth:string}>({action:'device',...data,localSnapshots:true});
+ if(currentUser===userId){await native.setWidgetAccountAuthorization(userId,result.backgroundAuth);registeredUser=userId;registeredDevice=data.deviceId;await homeAccounts?.ensureHomeAccounts();}
 });}
 export async function clearWidgetAccountSync(){
  const deviceId=registeredDevice;registeredUser=null;registeredDevice=null;

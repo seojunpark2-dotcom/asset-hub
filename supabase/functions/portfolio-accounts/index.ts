@@ -7,18 +7,19 @@ Deno.serve(async req=>{
  const url=Deno.env.get('SUPABASE_URL')!;
  const admin=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
  try{
-  const raw=await req.text();if(raw.length>4096)return json({error:'요청 크기가 너무 큽니다.'},413);
+  const raw=await req.text();if(raw.length>65536)return json({error:'요청 크기가 너무 큽니다.'},413);
   const body=JSON.parse(raw);let userId:string;
-  const background=body.action==='background';
+  const background=['background','local-background','local-snapshot'].includes(body.action);
   if(background){
    const token=req.headers.get('X-Widget-Token')??'';if(!/^[0-9a-f]{64}$/.test(token))return json({error:'기기 인증이 필요합니다.'},401);
-   const {data,error}=await admin.from('portfolio_widget_devices').select('user_id').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
+   const {data,error}=await admin.from('portfolio_widget_devices').select('user_id,local_snapshots').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
    if(error||!data)return json({error:'앱을 열어 위젯 계좌 연결을 갱신하세요.'},401);userId=data.user_id;
+   if(body.action==='local-snapshot'&&!data.local_snapshots)return json({error:'앱에서 집 Wi-Fi 계좌 동기화를 등록하세요.'},403);
   }else{
    const bearer=req.headers.get('Authorization')??'';if(!bearer.startsWith('Bearer '))return json({error:'로그인이 필요합니다.'},401);
    const {data,error}=await admin.auth.getUser(bearer.slice(7));if(error||!data.user)return json({error:'로그인을 다시 확인하세요.'},401);userId=data.user.id;
   }
-  if(!['status','connect','sync','disconnect','device','revoke-device','background'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
+  if(!['status','connect','sync','disconnect','device','revoke-device','background','local-background','local-snapshot'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
   if(body.action==='device'){
    const backgroundAuth=Deno.env.get('ACCOUNT_WIDGET_ANON_JWT')??Deno.env.get('SUPABASE_ANON_KEY')??'';
    let role='';try{role=JSON.parse(atob(backgroundAuth.split('.')[1].replaceAll('-','+').replaceAll('_','/'))).role;}catch{}
@@ -28,7 +29,7 @@ Deno.serve(async req=>{
    if(readError||existing&&existing.user_id!==userId)return json({error:'기기 등록 실패'},403);
    const {count,error:countError}=await admin.from('portfolio_widget_devices').select('id',{count:'exact',head:true}).eq('user_id',userId);
    if(countError||!existing&&(count??0)>=10)return json({error:'기기 등록 한도에 도달했습니다.'},422);
-   const row={id:body.deviceId,user_id:userId,token_hash:await hash(body.token),expires_at:new Date(Date.now()+365*86400000).toISOString()};
+   const row={id:body.deviceId,user_id:userId,token_hash:await hash(body.token),expires_at:new Date(Date.now()+365*86400000).toISOString(),local_snapshots:body.localSnapshots===true};
    const {error}=existing?await admin.from('portfolio_widget_devices').update(row).eq('id',body.deviceId).eq('user_id',userId):await admin.from('portfolio_widget_devices').insert(row);
    return error?json({error:'기기 등록 실패'},500):json({ok:true,backgroundAuth});
   }
@@ -41,6 +42,26 @@ Deno.serve(async req=>{
   }
   const {data:connections,error:connectionError}=await admin.from('portfolio_connections').select('id,provider,enabled,last_synced_at').eq('user_id',userId);
   if(connectionError)return json({error:'계좌 연결 정보를 읽지 못했습니다.'},500);
+  if(body.action==='local-snapshot'){
+   if(!['kiwoom','upbit'].includes(body.provider)||!Array.isArray(body.positions)||body.positions.length>49)return json({error:'잘못된 잔고 정보'},422);
+   const amount=(v:unknown,maxDigits:number)=>typeof v==='string'&&/^\d+(\.\d{1,12})?$/.test(v)&&v.split('.')[0].replace(/^0+/,'').length<=maxDigits;
+   const seen=new Set<string>();
+   for(const p of body.positions){
+    if(!p||p.purchase_currency!=='KRW'||typeof p.name!=='string'||!p.name.trim()||p.name.length>120||
+     !amount(p.quantity,18)||Number(p.quantity)<=0||!amount(p.average_purchase_price,18)||!amount(p.original_investment_krw,60)||
+     typeof p.symbol!=='string'||seen.has(p.symbol)||
+     (body.provider==='kiwoom'? !['domestic_stock','domestic_etf'].includes(p.asset_type)||!/^[A-Z0-9]{6}$/.test(p.symbol):p.asset_type!=='crypto'||!/^KRW-[A-Z0-9]{2,15}$/.test(p.symbol)))return json({error:'잔고 검증 실패. 기존 자산을 유지합니다.'},422);
+    seen.add(p.symbol);
+   }
+   const enabled=(connections??[]).some(c=>c.provider===body.provider&&c.enabled);
+   if(!enabled&&body.replaceManual!==true)return json({error:'앱에서 수동 자산 교체에 동의하세요.'},422);
+   const {error}=await admin.rpc('portfolio_commit_account',{p_user:userId,p_provider:body.provider,p_positions:body.positions,p_connect:!enabled});
+   return error?json({error:'잔고 저장 실패. 기존 자산을 유지합니다.'},422):json({ok:true});
+  }
+  if(body.action==='local-background'){
+   const {data:holdings,error}=await admin.from('portfolio_holdings_read').select('*').eq('user_id',userId).order('created_at');
+   return error?json({error:'자산 조회 실패'},500):json({ok:true,holdings});
+  }
   const gatewayUrl=Deno.env.get('ACCOUNT_GATEWAY_URL');const secret=Deno.env.get('ACCOUNT_GATEWAY_SECRET');
   const gateway=async(path:string,provider?:string)=>{
    if(!gatewayUrl||!secret)throw Error('SETUP_REQUIRED');const target=new URL(gatewayUrl);

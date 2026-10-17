@@ -15,14 +15,15 @@ object PortfolioWidgetStore {
     try { stream.write(data.toString().toByteArray(Charsets.UTF_8)); target.finishWrite(stream) }
     catch (e: Exception) { target.failWrite(stream); throw e }
   }
-  @Synchronized fun setUser(context: Context, userId: String) {
+  fun setUser(context: Context, userId: String) = synchronized(HomeAccountSync) { synchronized(this) {
     if (read(context).optString("userId") != userId || userId.isEmpty()) {
       WidgetAccountSync.clear(context)
+      HomeAccountSync.clear(context)
       write(context, JSONObject().put("userId", userId))
       PortfolioWidgetProvider.updateAll(context)
       WidgetRefreshScheduler.cancel(context)
     }
-  }
+  } }
   @Synchronized fun update(context: Context, userId: String, json: String) {
     if (userId.isEmpty() || read(context).optString("userId") != userId) return
     val snapshot = JSONObject(json)

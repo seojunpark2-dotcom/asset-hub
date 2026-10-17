@@ -18,6 +18,12 @@ class AssetExpiryModule : Module() {
     AsyncFunction("prepareWidgetAccountSync") { userId: String, url: String, key: String -> WidgetAccountSync.prepare(requireNotNull(appContext.reactContext), userId, url, key) }
     AsyncFunction("clearWidgetAccountSync") { WidgetAccountSync.clear(requireNotNull(appContext.reactContext)) }
     AsyncFunction("setWidgetAccountAuthorization") { userId: String, token: String -> WidgetAccountSync.setAuthorization(requireNotNull(appContext.reactContext), userId, token) }
+    AsyncFunction("homeAccountStatus") { HomeAccountSync.status(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("registerHomeWifi") { HomeAccountSync.registerHome(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("saveHomeAccount") { provider: String, access: String, secret: String -> HomeAccountSync.save(requireNotNull(appContext.reactContext), provider, access, secret) }
+    AsyncFunction("removeHomeAccount") { provider: String -> HomeAccountSync.remove(requireNotNull(appContext.reactContext), provider) }
+    AsyncFunction("syncHomeAccounts") { HomeAccountSync.sync(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("ensureHomeAccounts") { HomeAccountSync.ensure(requireNotNull(appContext.reactContext)) }
     AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
     AsyncFunction("openNotificationSettings") {
       val context = requireNotNull(appContext.reactContext)

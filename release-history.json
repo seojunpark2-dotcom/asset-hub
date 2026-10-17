@@ -361,5 +361,10 @@
       "deviceVerification": "not performed; user fixed-IP gateway and broker keys not configured; real account sync remains pending",
       "setupStatus": "requires user-owned static-IP HTTPS gateway, Kiwoom/Upbit keys and allowlisted server IP"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.10.0",
+    "versionCode": 20
+  }
 }

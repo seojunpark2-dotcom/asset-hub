@@ -50,6 +50,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Worker(c
     return try {
       val input = state.getJSONObject("input")
       var accountsComplete = true
+      try { HomeAccountSync.sync(applicationContext) } catch (_: Exception) { /* Home Wi-Fi may be unavailable; still refresh public prices. */ }
       try {
         val accounts = WidgetAccountSync.holdings(applicationContext, state.getString("userId"))
         if (accounts != null) { input.put("holdings", accounts.getJSONArray("holdings")); accountsComplete = accounts.optBoolean("ok", false) }
