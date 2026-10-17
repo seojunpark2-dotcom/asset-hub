@@ -18,6 +18,22 @@ import javax.crypto.spec.SecretKeySpec
 @Config(sdk = [28, 33])
 class HomeAccountTest {
   @Before fun initialize() { WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication()) }
+  @Test fun everyNewAccountReadUsesFreshServerKeysAndOutboxRetriesDoNotReadKeysOrBrokerAgain() {
+    val r = JSONObject().put("access", "old-access").put("secret", "old-secret")
+    var loads = 0; var reads = 0
+    val keys = { loads++; JSONObject().put("ok", true).put("access", "new-access").put("secret", "new-secret") }
+    val fetch = { access: String, secret: String -> reads++; assertEquals("new-access", access); assertEquals("new-secret", secret); JSONArray() }
+    HomeAccountSync.fetchPending(r, "2026-10-18", 1000, keys, fetch)
+    assertEquals(1, loads); assertEquals(1, reads); assertEquals(1000L, r.getLong("keyFetchedAt"))
+    HomeAccountSync.fetchPending(r, "2026-10-18", 2000, { error("must reuse pending snapshot") }, fetch)
+    assertEquals(1, loads); assertEquals(1, reads)
+    r.remove("pending")
+    assertThrows(IllegalStateException::class.java) { HomeAccountSync.fetchPending(r, "2026-10-19", 3000, { error("server unavailable") }, fetch) }
+    assertEquals(1, reads); assertEquals("2026-10-18", r.getString("day")); assertFalse(r.has("pending"))
+    HomeAccountSync.fetchPending(r, "2026-10-19", 4000, keys, fetch)
+    assertEquals(2, loads); assertEquals(2, reads); assertEquals("2026-10-19", r.getString("day"))
+    assertFalse(HomeAccountSync.providerStatus(r).toString().contains("new-secret"))
+  }
   @Test fun importedKeysRejectAChangedLoginBeforeReadingOrWritingTheVault() {
     val context = RuntimeEnvironment.getApplication()
     PortfolioWidgetStore.setUser(context, "current-owner")

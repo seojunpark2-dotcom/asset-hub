@@ -10,7 +10,7 @@ Deno.serve(async req=>{
  try{
   const raw=await req.text();if(raw.length>65536)return json({error:'요청 크기가 너무 큽니다.'},413);
   const body=JSON.parse(raw);let userId:string;
-  const background=['background','local-background','local-snapshot'].includes(body.action);
+  const background=['background','local-background','local-snapshot','background-credentials'].includes(body.action);
   if(background){
    const token=req.headers.get('X-Widget-Token')??'';if(!/^[0-9a-f]{64}$/.test(token))return json({error:'기기 인증이 필요합니다.'},401);
    const {data,error}=await admin.from('portfolio_widget_devices').select('user_id,local_snapshots').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
@@ -20,18 +20,23 @@ Deno.serve(async req=>{
    const bearer=req.headers.get('Authorization')??'';if(!bearer.startsWith('Bearer '))return json({error:'로그인이 필요합니다.'},401);
    const {data,error}=await admin.auth.getUser(bearer.slice(7));if(error||!data.user)return json({error:'로그인을 다시 확인하세요.'},401);userId=data.user.id;
   }
-  if(!['status','connect','sync','disconnect','device','revoke-device','background','local-background','local-snapshot','credential-status','credentials'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
-  if(body.action==='credential-status'||body.action==='credentials'){
+  if(!['status','connect','sync','disconnect','device','revoke-device','background','local-background','local-snapshot','credential-status','credentials','background-credentials'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
+  if(['credential-status','credentials','background-credentials'].includes(body.action)){
    const env=(name:string)=>Deno.env.get(name);
    if(!credentialOwner(userId,env))return json({error:'키 수신 권한이 없습니다. ACCOUNT_KEY_OWNER_USER_ID를 본인 로그인 사용자 ID로 설정하세요.'},403);
    if(body.action==='credential-status')return json({configured:{kiwoom:!!providerCredentials('kiwoom',env),upbit:!!providerCredentials('upbit',env)}});
    const token=req.headers.get('X-Widget-Token')??'';
    if(!/^[0-9a-f]{64}$/.test(token)||typeof body.deviceId!=='string')return json({error:'기기 인증이 필요합니다.'},401);
-   const {data:device,error}=await admin.from('portfolio_widget_devices').select('user_id,local_snapshots').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
+   const {data:device,error}=await admin.from('portfolio_widget_devices').select('user_id,local_snapshots,credential_providers').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
    if(error||!credentialDevice(userId,device))return json({error:'앱의 기기 연결을 갱신하세요.'},403);
    if(!['kiwoom','upbit'].includes(body.provider))return json({error:'지원하지 않는 기관입니다.'},400);
+   if(body.action==='background-credentials'&&!device?.credential_providers?.includes(body.provider))return json({error:'앱에서 해당 기관의 자동 조회를 연결하세요.'},403);
    const credentials=providerCredentials(body.provider,env);
    if(!credentials)return json({error:'Supabase Edge Functions Secrets에 해당 기관 키 두 개를 등록하세요.'},422);
+   if(body.action==='credentials'&&body.autoRefresh===true){
+    const {data:granted,error}=await admin.rpc('portfolio_device_credentials',{p_user:userId,p_device:body.deviceId,p_provider:body.provider,p_enable:true});
+    if(error||!granted)return json({error:'자동 키 수신 권한 등록 실패'},500);
+   }
    return json({ok:true,...credentials});
   }
   if(body.action==='device'){
@@ -45,13 +50,24 @@ Deno.serve(async req=>{
    if(countError||!existing&&(count??0)>=10)return json({error:'기기 등록 한도에 도달했습니다.'},422);
    const row={id:body.deviceId,user_id:userId,token_hash:await hash(body.token),expires_at:new Date(Date.now()+365*86400000).toISOString(),local_snapshots:body.localSnapshots===true};
    const {error}=existing?await admin.from('portfolio_widget_devices').update(row).eq('id',body.deviceId).eq('user_id',userId):await admin.from('portfolio_widget_devices').insert(row);
-   return error?json({error:'기기 등록 실패'},500):json({ok:true,backgroundAuth});
+   if(error)return json({error:'기기 등록 실패'},500);
+   // Upgrade only institutions already enabled on this device. Public capability requests cannot enroll.
+   if(Array.isArray(body.credentialProviders)&&body.credentialProviders.length&&credentialOwner(userId,name=>Deno.env.get(name))){
+    for(const provider of new Set(body.credentialProviders)){
+     if(!['kiwoom','upbit'].includes(provider as string))return json({error:'지원하지 않는 기관입니다.'},400);
+     const {data:granted,error}=await admin.rpc('portfolio_device_credentials',{p_user:userId,p_device:body.deviceId,p_provider:provider,p_enable:true});
+     if(error||!granted)return json({error:'자동 키 수신 권한 등록 실패'},500);
+    }
+   }
+   return json({ok:true,backgroundAuth});
   }
   if(body.action==='revoke-device'){
    const {error}=await admin.from('portfolio_widget_devices').delete().eq('user_id',userId).eq('id',body.deviceId);return error?json({error:'기기 연결 해제 실패'},500):json({ok:true});
   }
   if(body.action==='disconnect'){
    if(!['kiwoom','upbit'].includes(body.provider))return json({error:'지원하지 않는 기관입니다.'},400);
+   const {error:revokeError}=await admin.rpc('portfolio_device_credentials',{p_user:userId,p_device:null,p_provider:body.provider,p_enable:false});
+   if(revokeError)return json({error:'자동 키 수신 권한 해제 실패'},500);
    const {error}=await admin.rpc('portfolio_disconnect_account',{p_user:userId,p_provider:body.provider});return error?json({error:'연결 해제 실패'},500):json({ok:true});
   }
   const {data:connections,error:connectionError}=await admin.from('portfolio_connections').select('id,provider,enabled,last_synced_at').eq('user_id',userId);

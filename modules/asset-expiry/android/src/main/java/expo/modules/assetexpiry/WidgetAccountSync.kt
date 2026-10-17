@@ -54,7 +54,7 @@ object WidgetAccountSync {
     write(context, data)
     return JSONObject().put("deviceId", data.getString("deviceId")).put("token", data.getString("token")).toString()
   }
-  // This token can only synchronize/read this user's portfolio; it cannot trade or manage credentials.
+  // Server enrollment controls per-provider background credential access. The public JWT alone grants nothing.
   fun setAuthorization(context: Context, userId: String, authorization: String) {
     require(PortfolioWidgetStore.refreshState(context).optString("userId") == userId)
     val data = requireNotNull(read(context));require(data.optString("userId") == userId)
@@ -78,7 +78,7 @@ object WidgetAccountSync {
       connection.setRequestProperty("apikey", data.getString("apikey"))
       connection.setRequestProperty("Authorization", "Bearer $userJwt")
       connection.setRequestProperty("X-Widget-Token", data.getString("token"))
-      val body = JSONObject().put("action", "credentials").put("provider", provider).put("deviceId", data.getString("deviceId"))
+      val body = JSONObject().put("action", "credentials").put("provider", provider).put("deviceId", data.getString("deviceId")).put("autoRefresh", true)
       connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
       check(connection.responseCode == 200) { "키를 받지 못했습니다. Supabase 키 등록·본인 권한·로그인 상태를 확인하세요." }
       val result = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
@@ -92,7 +92,8 @@ object WidgetAccountSync {
     val connection = URI(data.getString("url")).toURL().openConnection() as HttpURLConnection
     try {
       connection.requestMethod = "POST"; connection.doOutput = true; connection.connectTimeout = 15000; connection.readTimeout = 140000
-      connection.instanceFollowRedirects = false
+      connection.instanceFollowRedirects = false; connection.useCaches = false
+      if (body.optString("action") == "background-credentials") connection.readTimeout = 20000
       connection.setRequestProperty("Content-Type", "application/json")
       connection.setRequestProperty("apikey", data.getString("apikey"))
       connection.setRequestProperty("Authorization", "Bearer " + data.getString("authorization"))

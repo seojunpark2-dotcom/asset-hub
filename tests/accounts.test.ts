@@ -71,8 +71,22 @@ test('Account snapshots are atomic, owner-isolated, read-only to app users and s
   await db.exec(await readFile(new URL('../supabase/migrations/20261010091417_portfolio_schema.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/migrations/20261015132411_portfolio_account_connections.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/migrations/20261017082059_home_account_device_scope.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../supabase/migrations/20261017171555_device_credential_refresh_scope.sql',import.meta.url),'utf8'));
   assert.equal((await db.query<{column_default:string}>("select column_default from information_schema.columns where table_name='portfolio_widget_devices' and column_name='local_snapshots'")).rows[0]?.column_default,'false');
   await db.exec(`insert into auth.users values('${a}'),('${b}');set role service_role;`);
+  const device='00000000-0000-0000-0000-000000000010';
+  await db.query("insert into portfolio_widget_devices(id,user_id,token_hash) values($1,$2,$3)",[device,a,'a'.repeat(64)]);
+  assert.deepEqual((await db.query<{credential_providers:string[]}>('select credential_providers from portfolio_widget_devices')).rows[0]?.credential_providers,[]);
+  const grant=async(user:string,provider:string,enable=true,id:string|null=device)=>(await db.query<{ok:boolean}>('select portfolio_device_credentials($1,$2,$3,$4) as ok',[user,id,provider,enable])).rows[0]?.ok;
+  assert.equal(await grant(a,'kiwoom'),false);
+  await db.query('update portfolio_widget_devices set local_snapshots=true where id=$1',[device]);
+  assert.equal(await grant(b,'kiwoom'),false);assert.equal(await grant(a,'invalid'),false);
+  assert.equal(await grant(a,'kiwoom'),true);assert.equal(await grant(a,'kiwoom'),true);assert.equal(await grant(a,'upbit'),true);
+  assert.deepEqual((await db.query<{credential_providers:string[]}>('select credential_providers from portfolio_widget_devices')).rows[0]?.credential_providers.sort(),['kiwoom','upbit']);
+  assert.equal(await grant(a,'kiwoom',false,null),true);
+  assert.deepEqual((await db.query<{credential_providers:string[]}>('select credential_providers from portfolio_widget_devices')).rows[0]?.credential_providers,['upbit']);
+  await db.query("update portfolio_widget_devices set expires_at=now()-interval '1 day' where id=$1",[device]);
+  assert.equal(await grant(a,'kiwoom'),false);
   const positions=normalizeKiwoom([{stk_cd:'A360750',stk_nm:'ETF',rmnd_qty:'2',pur_amt:'40000'}],new Set(['360750']));
   await db.query('select portfolio_commit_account($1,$2,$3,true)',[a,'kiwoom',JSON.stringify(positions)]);
   assert.equal((await db.query('select quantity from portfolio_holdings')).rows.length,1);
@@ -86,6 +100,7 @@ test('Account snapshots are atomic, owner-isolated, read-only to app users and s
   await assert.rejects(()=>db.exec(`insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
    values('${a}','키움증권','domestic_etf','360750','duplicate',1,100,'KRW',100)`));
   await assert.rejects(()=>db.query('select * from portfolio_widget_devices'));
+  await assert.rejects(()=>db.query('select portfolio_device_credentials($1,$2,$3,true)',[a,device,'kiwoom']));
   await assert.rejects(()=>db.query('select portfolio_commit_account($1,$2,$3,true)',[a,'kiwoom','[]']));
   await db.exec(`select set_config('request.jwt.claim.sub','${b}',false)`);
   assert.equal((await db.query('select * from portfolio_connections')).rows.length,0);

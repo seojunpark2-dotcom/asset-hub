@@ -132,6 +132,20 @@ object HomeAccountSync {
     .put("configured", r.optBoolean("enabled") && r.optString("access").isNotEmpty()).put("lastDay", r.optString("day"))
     .put("lastAttempt", r.optLong("attempt")).put("lastFetched", r.optLong("fetchedAt"))
     .put("usedIp", r.optString("usedIp")).put("lastSynced", r.optString("synced")).put("error", r.optString("error"))
+    .put("lastKeyFetched", r.optLong("keyFetchedAt"))
+  // An existing outbox is retried without fetching keys or reading the broker again.
+  internal fun fetchPending(record: JSONObject, day: String, now: Long,
+    loadKeys: () -> JSONObject, fetch: (String, String) -> JSONArray) {
+    if (record.has("pending")) return
+    val keys = try { loadKeys() } catch (_: Exception) {
+      error("Supabase 최신 키 수신 실패. 앱의 자동 조회 연결·키 등록·네트워크를 확인하세요.")
+    }
+    val access = keys.optString("access"); val secret = keys.optString("secret")
+    require(keys.optBoolean("ok") && access.length in 1..2048 && secret.length in 1..2048) { "Supabase 기관 키를 확인하세요." }
+    record.put("keyFetchedAt", now)
+    val positions = fetch(access, secret)
+    record.put("pending", positions).put("day", day).put("fetchedAt", now)
+  }
   fun due(record: JSONObject, day: String, now: Long): Boolean = record.optBoolean("enabled") && record.optString("day") != day && now - record.optLong("attempt", 0) >= 30 * 60 * 1000
   @Synchronized fun sync(context: Context): String {
     val owner = user(context); if (owner.isEmpty()) return "{}"
@@ -149,8 +163,11 @@ object HomeAccountSync {
       try {
         if (!r.has("pending")) {
           r.put("attempt", now).put("usedIp", address); vault(context).write(data)
-          val positions = BrokerSnapshot(network, r.getString("access"), r.getString("secret")).fetch(provider)
-          r.put("pending", positions).put("day", day).put("fetchedAt", System.currentTimeMillis()); vault(context).write(data)
+          fetchPending(r, day, System.currentTimeMillis(), loadKeys = {
+            WidgetAccountSync.request(context, owner, JSONObject().put("action", "background-credentials").put("provider", provider))
+              ?: error("앱에서 계좌 자동 조회를 연결하세요.")
+          }, fetch = { access, secret -> BrokerSnapshot(network, access, secret).fetch(provider) })
+          vault(context).write(data)
         }
         require(user(context) == owner)
         // A failed upload retains the encrypted snapshot and retries it without reading the account twice.

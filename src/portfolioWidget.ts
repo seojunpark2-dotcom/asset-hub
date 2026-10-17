@@ -1,7 +1,7 @@
 import {requireOptionalNativeModule} from 'expo';
 import {widgetSnapshot} from './widgetData';
 import type {Holding,Quote} from './types';
-import {accountRequest,homeAccounts} from './accounts';
+import {accountRequest,homeAccounts,homeStatus} from './accounts';
 import {supabase} from './supabase';
 import type {AccountProvider} from './accounts';
 interface WidgetBridge {setWidgetUser(userId:string):Promise<void>;updateWidget(userId:string,json:string):Promise<void>;setWidgetRefreshInput(userId:string,json:string):Promise<void>;pinWidget():Promise<boolean>;prepareWidgetAccountSync(userId:string,url:string,key:string):Promise<string>;setWidgetAccountAuthorization(userId:string,token:string):Promise<void>;clearWidgetAccountSync():Promise<void>;}
@@ -22,7 +22,10 @@ export function registerWidgetAccountSync(userId:string){return serial(async()=>
  const url=process.env.EXPO_PUBLIC_SUPABASE_URL;const key=process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  if(!url||!key)return;
  const data=JSON.parse(await native.prepareWidgetAccountSync(userId,url+'/functions/v1/portfolio-accounts',key));
- const result=await accountRequest<{backgroundAuth:string}>({action:'device',...data,localSnapshots:true});
+ const local=await homeStatus();
+ const credentialProviders=(['kiwoom','upbit'] as const).filter(p=>local.providers[p]?.configured);
+ if(currentUser!==userId)return;
+ const result=await accountRequest<{backgroundAuth:string}>({action:'device',...data,localSnapshots:true,credentialProviders});
  if(currentUser===userId){await native.setWidgetAccountAuthorization(userId,result.backgroundAuth);registeredUser=userId;registeredDevice=data.deviceId;await homeAccounts?.ensureHomeAccounts();}
 });}
 export async function clearWidgetAccountSync(){

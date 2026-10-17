@@ -71,7 +71,7 @@ function Portfolio({session}: {session:Session}) {
     if(running.current||!mounted.current)return;running.current=true;setBusy(true);
     const notices:string[]=[];
     try {
-      try{const sync=await syncAccounts();notices.push(...Object.values(sync.errors));}catch(e){notices.push(errorMessage(e));}
+      try{await registerWidgetAccountSync(userId);const sync=await syncAccounts();notices.push(...Object.values(sync.errors));}catch(e){notices.push(errorMessage(e));}
       try {const data=await loadHoldings(userId);if(mounted.current)setHoldings(data);}catch(e){notices.push('자산 동기화에 실패했습니다. 저장된 데이터를 표시합니다.');}
       try {
         const result=await getQuotes(quoteRef.current);

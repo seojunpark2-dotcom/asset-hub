@@ -1,7 +1,7 @@
 import {supabase} from './supabase';
 import {requireOptionalNativeModule} from 'expo';
 export interface AccountWifi {id:string;label:string;ssid:string;ip:string;}
-export interface HomeStatus {networks:AccountWifi[];observedIp:string;observedSsid:string;ipCheckedAt:number;widgetPending:boolean;widgetSyncedAt:number;backgroundPermission:boolean;providers:Record<AccountProvider,{configured:boolean;lastDay:string;lastAttempt:number;lastFetched:number;usedIp:string;lastSynced:string;error:string}>;}
+export interface HomeStatus {networks:AccountWifi[];observedIp:string;observedSsid:string;ipCheckedAt:number;widgetPending:boolean;widgetSyncedAt:number;backgroundPermission:boolean;providers:Record<AccountProvider,{configured:boolean;lastDay:string;lastAttempt:number;lastFetched:number;lastKeyFetched:number;usedIp:string;lastSynced:string;error:string}>;}
 interface HomeBridge {importSupabaseAccount(userId:string,provider:string,jwt:string):Promise<void>;homeAccountStatus():Promise<string>;registerHomeWifi():Promise<string>;updateAccountWifi(id:string,label:string,ssid:string,ip:string):Promise<string>;removeAccountWifi(id:string):Promise<string>;checkHomeNetwork():Promise<string>;saveHomeAccount(provider:string,access:string,secret:string):Promise<void>;removeHomeAccount(provider:string):Promise<void>;syncHomeAccounts():Promise<string>;ensureHomeAccounts():Promise<void>;}
 export const homeAccounts=requireOptionalNativeModule<HomeBridge>('AssetExpiry');
 export async function homeStatus():Promise<HomeStatus>{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');return JSON.parse(await homeAccounts.homeAccountStatus());}

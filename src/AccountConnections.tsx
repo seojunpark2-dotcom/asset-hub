@@ -22,6 +22,7 @@ export function AccountSyncSummary(){
    <Label size={13}>최근 계좌 조회 실행: {koreanTime(r?.lastAttempt??0)}</Label>
    <Label size={13}>최근 동기화 성공: {koreanTime(r?.lastSynced??'')}</Label>
    <Label size={13}>최근 조회 사용 IP: {r?.usedIp||'조회 기록 없음'}</Label>
+   <Label size={13}>최근 Supabase 키 수신: {koreanTime(r?.lastKeyFetched??0)}</Label>
    {!!r?.error&&<Label size={12}>{r.error}</Label>}
   </Card>;})}
   <Label size={13}>등록한 Wi-Fi: {status?.networks?.length??0}곳 · 아래 목록에서 이름과 IP 확인</Label>
@@ -49,7 +50,7 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
   await homeAccounts.registerHomeWifi();
  }
  function save(selected:AccountProvider){if(!homeAccounts)return;const bridge=homeAccounts;
-  Alert.alert('Supabase 키 가져오기',`본인 계정에 등록된 키를 받아 휴대폰에 암호화해 보관합니다. ${selected==='kiwoom'?'키움 국내 현금 주식·ETF':'업비트 KRW 코인'}의 수동 자산을 실제 잔고로 교체하는 데 동의합니다.`,[{text:'취소',style:'cancel'},{text:'동의하고 가져오기',onPress:()=>void run(async()=>{
+  Alert.alert('계좌 자동 조회 연결',`이 기기가 계좌 조회 전 Supabase에서 해당 기관의 최신 키를 자동 수신하도록 허용합니다. ${selected==='kiwoom'?'키움 국내 현금 주식·ETF':'업비트 KRW 코인'}의 수동 자산을 실제 잔고로 교체하는 데 동의합니다.`,[{text:'취소',style:'cancel'},{text:'동의하고 연결',onPress:()=>void run(async()=>{
    await importSupabaseAccount(selected);await bridge.syncHomeAccounts();await onSynced();
   },'키를 안전하게 저장했습니다. 기관별 최근 동기화와 오류를 확인하세요.')}]);
  }
@@ -79,10 +80,10 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
    <Label muted size={12}>{record?.lastSynced?'최근 동기화 '+new Date(record.lastSynced).toLocaleString('ko-KR'):'아직 계좌 동기화에 성공하지 않았습니다.'}</Label>
    <Label muted size={12}>Supabase 키: {cloud?.[p]?'등록됨':'미등록 또는 확인 필요'}</Label>
    {!!record?.error&&<Label size={13}>{record.error}</Label>}
-   <Button secondary disabled={busy||!status?.networks?.length||!cloud?.[p]} title={record?.configured?'Supabase 키 다시 가져오기':'Supabase에서 키 가져오기'} onPress={()=>save(p)}/>
+   <Button secondary disabled={busy||!status?.networks?.length||!cloud?.[p]} title={record?.configured?'자동 조회 연결 갱신':'계좌 자동 조회 연결'} onPress={()=>save(p)}/>
    {(record?.configured||record?.lastSynced)&&<Button secondary disabled={busy} title="계좌 연결 해제" onPress={()=>Alert.alert('연결 해제','휴대폰의 API 키를 삭제하고 마지막 잔고를 수동 자산으로 유지합니다.',[{text:'취소',style:'cancel'},{text:'연결 해제',onPress:()=>void run(async()=>{await homeAccounts?.removeHomeAccount(p);await accountRequest({action:'disconnect',provider:p});await onSynced();},'자동 조회를 중단했습니다.')}])}/>}
   </Card>;})}
-  <Label muted size={12}>Supabase → asset-hub → Edge Functions → Secrets에 기관 키 두 개를 등록한 뒤 설정 상태를 확인하고 키 가져오기를 누르세요. Publishable key 입력란에 넣지 않습니다. 키를 바꾸면 다시 가져오세요. 연결 해제는 휴대폰 키만 삭제하며 서버 Secrets는 유지합니다.</Label>
+  <Label muted size={12}>최초 한 번 기관별 자동 조회를 연결하면 실제 계좌 조회 전마다 Supabase에서 최신 키를 받습니다. 이후 Secrets에서 키를 교체해도 앱에 다시 입력할 필요가 없습니다. 키 수신 실패 시 이전 키로 조회하지 않고 기존 자산을 유지합니다. 연결 해제는 이 기관의 자동 키 수신 권한도 해제하며 서버 Secrets는 유지합니다.</Label>
   <Label muted size={12}>키움: KIWOOM_APP_KEY · KIWOOM_APP_SECRET{ '\n' }업비트: UPBIT_ACCESS_KEY · UPBIT_SECRET_KEY</Label>
   {!!cloudError&&<Label size={13}>{cloudError}</Label>}
   <Button secondary disabled={busy} title="Supabase 키 등록 상태 확인" onPress={()=>void run(load,'서버 키 등록 상태를 확인했습니다.')}/>
