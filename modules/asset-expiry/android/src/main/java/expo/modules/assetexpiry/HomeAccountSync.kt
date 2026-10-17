@@ -34,7 +34,7 @@ object HomeAccountSync {
     return data
   }
   @Synchronized fun clear(context: Context) { vault(context).clear(); WorkManager.getInstance(context).cancelUniqueWork(WORK) }
-  fun ensure(context: Context) {
+  @Synchronized fun ensure(context: Context) {
     val data = read(context)
     if (user(context).isEmpty() || AccountWifiRegistry.entries(data).length() == 0) {
       WorkManager.getInstance(context).cancelUniqueWork(WORK); return
