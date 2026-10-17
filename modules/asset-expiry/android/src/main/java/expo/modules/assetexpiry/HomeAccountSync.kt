@@ -70,8 +70,16 @@ object HomeAccountSync {
   @Synchronized fun registerHome(context: Context): String {
     require(user(context).isNotEmpty())
     val (network, ssid) = wifi(context)
-    val data = read(context).put("ssid", ssid).put("ip", ip(network))
+    val address = ip(network)
+    val data = read(context).put("ssid", ssid).put("ip", address)
+      .put("observedSsid", ssid).put("observedIp", address).put("ipCheckedAt", System.currentTimeMillis())
     vault(context).write(data); ensure(context)
+    return status(context)
+  }
+  @Synchronized fun checkNetwork(context: Context): String {
+    val (network, ssid) = wifi(context)
+    val data = read(context).put("observedSsid", ssid).put("observedIp", ip(network)).put("ipCheckedAt", System.currentTimeMillis())
+    vault(context).write(data)
     return status(context)
   }
   @Synchronized fun save(context: Context, provider: String, access: String, secret: String) {
@@ -93,11 +101,18 @@ object HomeAccountSync {
     val data = read(context); val providers = JSONObject()
     for (p in listOf("kiwoom", "upbit")) {
       val r = data.optJSONObject(p) ?: JSONObject()
-      providers.put(p, JSONObject().put("configured", r.optBoolean("enabled") && r.optString("access").isNotEmpty()).put("lastDay", r.optString("day")).put("lastSynced", r.optString("synced")).put("error", r.optString("error")))
+      providers.put(p, providerStatus(r))
     }
+    val widget = PortfolioWidgetStore.refreshState(context)
     return JSONObject().put("ssid", data.optString("ssid")).put("ip", data.optString("ip")).put("providers", providers)
+      .put("observedIp", data.optString("observedIp")).put("observedSsid", data.optString("observedSsid")).put("ipCheckedAt", data.optLong("ipCheckedAt"))
+      .put("widgetPending", widget.optBoolean("accountWidgetPending")).put("widgetSyncedAt", widget.optLong("accountWidgetSyncedAt"))
       .put("backgroundPermission", Build.VERSION.SDK_INT < 29 || context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED).toString()
   }
+  internal fun providerStatus(r: JSONObject): JSONObject = JSONObject()
+    .put("configured", r.optBoolean("enabled") && r.optString("access").isNotEmpty()).put("lastDay", r.optString("day"))
+    .put("lastAttempt", r.optLong("attempt")).put("lastFetched", r.optLong("fetchedAt"))
+    .put("usedIp", r.optString("usedIp")).put("lastSynced", r.optString("synced")).put("error", r.optString("error"))
   fun due(record: JSONObject, day: String, now: Long): Boolean = record.optBoolean("enabled") && record.optString("day") != day && now - record.optLong("attempt", 0) >= 30 * 60 * 1000
   @Synchronized fun sync(context: Context): String {
     val owner = user(context); if (owner.isEmpty()) return "{}"
@@ -107,43 +122,53 @@ object HomeAccountSync {
     // Refuse every provider call until both home SSID and public IPv4 match registration.
     val (network, ssid) = wifi(context)
     require(data.optString("ssid").isNotEmpty() && data.optString("ssid") == ssid) { "등록한 집 Wi-Fi에서만 계좌를 조회합니다." }
-    require(ip(network) == data.optString("ip")) { "집 공인 IP가 바뀌었습니다. 기관 허용 IP를 변경한 뒤 집 Wi-Fi를 다시 등록하세요." }
+    val address = ip(network)
+    data.put("observedIp", address).put("observedSsid", ssid).put("ipCheckedAt", System.currentTimeMillis()); vault(context).write(data)
+    require(address == data.optString("ip")) { "집 공인 IP가 바뀌었습니다. 기관 허용 IP를 변경한 뒤 집 Wi-Fi를 다시 등록하세요." }
     for (provider in targets) {
       val r = data.getJSONObject(provider)
       try {
         if (!r.has("pending")) {
-          r.put("attempt", now); vault(context).write(data)
+          r.put("attempt", now).put("usedIp", address); vault(context).write(data)
           val positions = BrokerSnapshot(network, r.getString("access"), r.getString("secret")).fetch(provider)
-          r.put("pending", positions).put("day", day); vault(context).write(data)
+          r.put("pending", positions).put("day", day).put("fetchedAt", System.currentTimeMillis()); vault(context).write(data)
         }
         require(user(context) == owner)
         // A failed upload retains the encrypted snapshot and retries it without reading the account twice.
         WidgetAccountSync.request(context, owner, JSONObject().put("action", "local-snapshot").put("provider", provider)
           .put("positions", r.getJSONArray("pending")).put("replaceManual", r.optBoolean("consent"))) ?: error("앱을 한 번 열어 기기 연결을 등록하세요.")
         val synced = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date())
+        PortfolioWidgetStore.markAccountChanged(context, owner)
         r.remove("pending"); r.put("consent", false).put("synced", synced).put("error", "")
       } catch (e: Exception) { r.put("error", e.message?.takeIf { !it.contains(r.optString("secret", "\u0000")) } ?: "계좌 동기화 실패") }
       require(user(context) == owner); vault(context).write(data)
     }
     return status(context)
   }
-  fun refreshWidget(context: Context) {
+  fun syncAndWidget(context: Context): String {
+    try { sync(context) } finally { try { refreshWidget(context) } catch (_: Exception) { /* Durable pending flag retries without another broker fetch. */ } }
+    return status(context)
+  }
+  internal fun widgetDue(state: JSONObject, now: Long): Boolean = state.optBoolean("accountWidgetPending") && now - state.optLong("accountWidgetAttempt") >= 15 * 60 * 1000
+  internal fun refreshWidget(context: Context, now: Long = System.currentTimeMillis(),
+    load: (String) -> JSONObject? = { WidgetAccountSync.holdings(context, it, true) },
+    refresh: (JSONObject) -> WidgetRefreshEngine.Refresh = { WidgetRefreshEngine.refresh(it) }) {
     val state = PortfolioWidgetStore.refreshState(context); val owner = state.optString("userId")
+    if (!widgetDue(state, now) || owner.isEmpty()) return
     val input = state.optJSONObject("input") ?: return
-    val result = WidgetAccountSync.holdings(context, owner, true) ?: return
+    PortfolioWidgetStore.noteAccountWidgetAttempt(context, state, now)
+    val result = load(owner) ?: return
+    require(result.optBoolean("ok"))
     input.put("holdings", result.getJSONArray("holdings"))
-    val quotes = WidgetRefreshEngine.refresh(input)
-    PortfolioWidgetStore.commitRefresh(context, state, quotes.snapshot, quotes.quotes, WidgetRefreshScheduler.day(System.currentTimeMillis()), false, input.getJSONArray("holdings"))
+    val quotes = refresh(input)
+    PortfolioWidgetStore.commitRefresh(context, state, quotes.snapshot, quotes.quotes, WidgetRefreshScheduler.day(now), quotes.complete, input.getJSONArray("holdings"), true)
   }
 }
 
 class HomeAccountWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
   override fun doWork(): Result {
     try {
-      val before = HomeAccountSync.status(applicationContext)
-      val after = HomeAccountSync.sync(applicationContext)
-      val a = JSONObject(before).optJSONObject("providers"); val b = JSONObject(after).optJSONObject("providers")
-      if (listOf("kiwoom", "upbit").any { a?.optJSONObject(it)?.optString("lastSynced") != b?.optJSONObject(it)?.optString("lastSynced") }) HomeAccountSync.refreshWidget(applicationContext)
+      HomeAccountSync.syncAndWidget(applicationContext)
     } catch (_: Exception) { /* Keep previous data; next eligible run retries. */ }
     return Result.success()
   }

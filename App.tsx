@@ -12,7 +12,7 @@ import { Analysis } from './src/Charts';
 import { NotificationSettings } from './src/NotificationSettings';
 import { cleanupLegacyNotifications } from './src/legacyCleanup';
 import {widgetSnapshot} from './src/widgetData';
-import {AccountConnections} from './src/AccountConnections';
+import {AccountConnections,AccountSyncSummary} from './src/AccountConnections';
 import {syncAccounts} from './src/accounts';
 import {setWidgetUser,syncPortfolioWidget,syncWidgetRefreshInput,pinPortfolioWidget,registerWidgetAccountSync,clearWidgetAccountSync} from './src/portfolioWidget';
 const light={bg:'#F4F6FA',card:'#FFFFFF',text:'#182337',muted:'#6D7A90',line:'#E7EBF2',accent:'#3366FF',gain:'#E44853',loss:'#2876DF'};
@@ -145,6 +145,7 @@ function Portfolio({session}: {session:Session}) {
         <Label bold size={20}>금융기관별 자산</Label>
         {banks.map(({bank,summary:s})=><Card key={bank}><Label bold>{bank}</Label><View style={{flexDirection:'row',justifyContent:'space-between'}}><Label bold>{money(s.value)}</Label><Label color={s.profit?.gte(0)?theme.gain:theme.loss}>{signedMoney(s.profit)} · {pct(s.percent)}</Label></View></Card>)}
       </>}
+      {tab==='설정'&&<AccountSyncSummary/>}
       {tab==='설정'?<Card><Label bold>주식·ETF 시세 · Yahoo Finance</Label><Label muted>국내·미국 주식과 ETF는 휴대폰에서 야후 파이낸스로 직접 조회합니다. 별도 API 키나 계좌 등록은 필요하지 않습니다. 가격은 5분간 재사용하며 지연 시세일 수 있습니다. 종목별 가격 기준시각을 확인하세요.</Label></Card>:null}
       {tab==='설정'&&<>
         <AccountConnections onSynced={refresh}/>

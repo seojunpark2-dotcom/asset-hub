@@ -47,13 +47,29 @@ object PortfolioWidgetStore {
     WidgetRefreshScheduler.ensure(context)
   }
   @Synchronized fun refreshState(context: Context): JSONObject = read(context)
-  @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean, holdings: org.json.JSONArray? = null): Boolean {
+  @Synchronized fun markAccountChanged(context: Context, userId: String) {
+    val data = read(context)
+    if (userId.isEmpty() || data.optString("userId") != userId) return
+    data.put("accountWidgetPending", true).put("accountRevision", java.util.UUID.randomUUID().toString()).put("accountWidgetAttempt", 0L)
+    write(context, data)
+  }
+  @Synchronized fun noteAccountWidgetAttempt(context: Context, state: JSONObject, now: Long) {
+    val data = read(context)
+    if (data.optString("userId") == state.optString("userId") && data.optString("accountRevision") == state.optString("accountRevision")) {
+      data.put("accountWidgetAttempt", now); write(context, data)
+    }
+  }
+  @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean, holdings: org.json.JSONArray? = null, accountSnapshot: Boolean = false): Boolean {
     val data = read(context)
     if (state.optString("userId").isEmpty() || data.optString("userId") != state.optString("userId") || data.optString("revision") != state.optString("revision")) return false
+    if (data.optString("accountRevision") != state.optString("accountRevision")) return false
     data.put("snapshot", snapshot)
     data.getJSONObject("input").put("quotes", quotes)
     if (holdings != null) data.getJSONObject("input").put("holdings", holdings)
     if (complete) data.put("lastSuccessDay", day)
+    if (complete && accountSnapshot && data.optBoolean("accountWidgetPending")) {
+      data.put("accountWidgetPending", false).put("accountWidgetSyncedAt", System.currentTimeMillis())
+    }
     write(context, data)
     PortfolioWidgetProvider.updateAll(context)
     return true

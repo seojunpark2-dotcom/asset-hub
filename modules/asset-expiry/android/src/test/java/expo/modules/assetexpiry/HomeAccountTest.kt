@@ -3,10 +3,13 @@ package expo.modules.assetexpiry
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
+import org.junit.Before
 import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.RuntimeEnvironment
+import androidx.work.testing.WorkManagerTestInitHelper
 import android.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -14,6 +17,54 @@ import javax.crypto.spec.SecretKeySpec
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28, 33])
 class HomeAccountTest {
+  @Before fun initialize() { WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication()) }
+  @Test fun statusIncludesExecutionTimesAndUsedIpButNeverCredentialsOrBalances() {
+    val r = JSONObject().put("enabled", true).put("access", "private-access").put("secret", "private-secret")
+      .put("attempt", 123L).put("fetchedAt", 124L).put("synced", "2026-10-17T01:02:03Z").put("usedIp", "203.0.113.7").put("pending", JSONArray())
+    val status = HomeAccountSync.providerStatus(r)
+    assertEquals(123L, status.getLong("lastAttempt")); assertEquals("203.0.113.7", status.getString("usedIp"))
+    assertFalse(status.has("secret")); assertFalse(status.has("access")); assertFalse(status.has("pending"))
+  }
+  private fun widgetInput() = JSONObject().put("colors", "kr").put("quotes", JSONObject()).put("holdings", JSONArray())
+  private fun accountHolding() = JSONObject().put("id", "ETF").put("name", "ETF").put("asset_type", "domestic_etf").put("symbol", "360750")
+    .put("quantity", "2").put("purchase_currency", "KRW").put("original_investment_krw", "200")
+  @Test fun accountSyncUpdatesWidgetQuantitiesWeightedProfitAndReturnWithoutAnotherAccountCall() {
+    val context = RuntimeEnvironment.getApplication()
+    PortfolioWidgetStore.setUser(context, "widget-test")
+    PortfolioWidgetStore.setRefreshInput(context, "widget-test", widgetInput().toString())
+    PortfolioWidgetStore.markAccountChanged(context, "widget-test")
+    val now = 200000000L
+    var loads = 0
+    val load = { _: String -> loads++; JSONObject().put("ok", true).put("holdings", JSONArray().put(accountHolding())) }
+    val refresh = { input: JSONObject -> WidgetRefreshEngine.refresh(input, fetchQuote = { JSONObject().put("current_price", "150") }) }
+    HomeAccountSync.refreshWidget(context, now, load, refresh)
+    val snapshot = PortfolioWidgetStore.snapshot(context)!!
+    assertEquals("₩300", snapshot.getString("totalValue")); assertEquals("+₩100", snapshot.getString("totalProfit")); assertEquals("+50.00%", snapshot.getString("totalPercent"))
+    assertEquals("+50.00%", snapshot.getJSONArray("rows").getJSONObject(0).getString("percent"))
+    assertFalse(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    assertTrue(PortfolioWidgetStore.refreshState(context).getLong("accountWidgetSyncedAt") > 0)
+    HomeAccountSync.refreshWidget(context, now + 2000000, load, refresh); assertEquals(1, loads)
+  }
+  @Test fun failedPriceRefreshRetainsPendingAndRetriesWithoutReadingBrokerAgain() {
+    val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "widget-test")
+    PortfolioWidgetStore.setRefreshInput(context, "widget-test", widgetInput().toString()); PortfolioWidgetStore.markAccountChanged(context, "widget-test")
+    val now = 200000000L; var loads = 0
+    val load = { _: String -> loads++; JSONObject().put("ok", true).put("holdings", JSONArray().put(accountHolding())) }
+    HomeAccountSync.refreshWidget(context, now, load) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { error("offline") }) }
+    assertTrue(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    HomeAccountSync.refreshWidget(context, now + 1000, load) { error("must be throttled") }; assertEquals(1, loads)
+    HomeAccountSync.refreshWidget(context, now + 900000, load) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { JSONObject().put("current_price", "200") }) }
+    assertEquals(2, loads); assertFalse(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    assertEquals("+100.00%", PortfolioWidgetStore.snapshot(context)!!.getString("totalPercent"))
+  }
+  @Test fun inFlightOldSnapshotCannotEraseAnewerAccountRefreshRequest() {
+    val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "widget-test")
+    PortfolioWidgetStore.setRefreshInput(context, "widget-test", widgetInput().toString()); PortfolioWidgetStore.markAccountChanged(context, "widget-test")
+    val old = PortfolioWidgetStore.refreshState(context)
+    PortfolioWidgetStore.markAccountChanged(context, "widget-test")
+    val accepted = PortfolioWidgetStore.commitRefresh(context, old, JSONObject().put("rows", JSONArray()), JSONObject(), "2026-10-17", true, JSONArray(), true)
+    assertFalse(accepted); assertTrue(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+  }
   @Test fun dailyGateSurvivesRepeatedForegroundAndBackgroundCalls() {
     val r = JSONObject().put("enabled", true)
     val now = 200000000L

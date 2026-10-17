@@ -1,7 +1,39 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Linking,PermissionsAndroid,Platform} from 'react-native';
 import {Button,Card,Field,Label} from './ui';
 import {accountRequest,homeAccounts,homeStatus,type AccountProvider,type HomeStatus} from './accounts';
+
+const koreanTime=(value:number|string)=>value?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';
+export function AccountSyncSummary(){
+ const [status,setStatus]=useState<HomeStatus|null>(null);const [error,setError]=useState('');const [checking,setChecking]=useState(false);
+ const alive=useRef(true);const loading=useRef(false);
+ const load=useCallback(async()=>{if(loading.current)return;loading.current=true;try{const next=await homeStatus();if(alive.current){setStatus(next);setError('');}}catch{if(alive.current)setError('조회 기록을 불러오지 못했습니다.');}finally{loading.current=false;}},[]);
+ useEffect(()=>{
+  alive.current=true;let active=true;const update=()=>{if(active&&AppState.currentState==='active')void load();};
+  update();const timer=setInterval(update,10000);const listener=AppState.addEventListener('change',s=>{if(s==='active')update();});
+  return()=>{active=false;alive.current=false;clearInterval(timer);listener.remove();};
+ },[load]);
+ async function check(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.checkHomeNetwork()));}catch(e){setError(e instanceof Error?e.message:'IP 확인 실패');}finally{setChecking(false);}}
+ return <Card><Label bold size={20}>계좌 조회 현황</Label>
+  <Label muted size={12}>한국 시간 · 집 Wi-Fi에서 기관별 하루 한 번</Label>
+  {(['kiwoom','upbit'] as const).map(p=>{const r=status?.providers[p];return <Card key={p}>
+   <Label bold>{p==='kiwoom'?'키움증권':'업비트'}{r?.configured?'':' · 자동 조회 미설정'}</Label>
+   <Label size={13}>최근 계좌 조회 실행: {koreanTime(r?.lastAttempt??0)}</Label>
+   <Label size={13}>최근 동기화 성공: {koreanTime(r?.lastSynced??'')}</Label>
+   <Label size={13}>최근 조회 사용 IP: {r?.usedIp||'조회 기록 없음'}</Label>
+   {!!r?.error&&<Label size={12}>{r.error}</Label>}
+  </Card>;})}
+  <Label size={13}>등록한 집 Wi-Fi: {status?.ssid||'등록 전'}</Label>
+  <Label size={13}>기관 허용 목록에 등록할 IP: {status?.ip||'등록 전'}</Label>
+  <Label size={13}>최근 확인 공인 IP: {status?.observedIp||'확인 전'}</Label>
+  {!!status?.observedIp&&<Label muted size={12}>{status.observedSsid} · {koreanTime(status.ipCheckedAt)} 확인</Label>}
+  {!!status?.ip&&!!status.observedIp&&status.ip!==status.observedIp&&<Label>등록 IP와 다릅니다. 집 Wi-Fi와 기관 허용 IP를 확인하세요.</Label>}
+  <Button secondary disabled={checking} title={checking?'IP 확인 중…':'현재 Wi-Fi IP 확인'} onPress={()=>void check()}/>
+  <Label size={13}>계좌 동기화 후 위젯: {status?.widgetPending?'갱신 대기 · 계좌 재조회 없이 재시도':status?.widgetSyncedAt?'반영 완료':'반영 기록 없음'}</Label>
+  {!!status?.widgetSyncedAt&&<Label muted size={12}>최근 위젯 반영: {koreanTime(status.widgetSyncedAt)}</Label>}
+  {!!error&&<Label size={13}>{error}</Label>}
+ </Card>;
+}
 
 export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
  const [status,setStatus]=useState<HomeStatus|null>(null);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');
