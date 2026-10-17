@@ -65,6 +65,15 @@ class HomeAccountTest {
     val accepted = PortfolioWidgetStore.commitRefresh(context, old, JSONObject().put("rows", JSONArray()), JSONObject(), "2026-10-17", true, JSONArray(), true)
     assertFalse(accepted); assertTrue(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
   }
+  @Test fun lateFailedQuotesCannotReplaceSuccessfullyReflectedWidget() {
+    val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "widget-test")
+    PortfolioWidgetStore.setRefreshInput(context, "widget-test", widgetInput().toString()); PortfolioWidgetStore.markAccountChanged(context, "widget-test")
+    val state = PortfolioWidgetStore.refreshState(context)
+    val good = JSONObject().put("rows", JSONArray()).put("totalValue", "₩300")
+    assertTrue(PortfolioWidgetStore.commitRefresh(context, state, good, JSONObject(), "2026-10-17", true, JSONArray(), true))
+    assertFalse(PortfolioWidgetStore.commitRefresh(context, state, JSONObject().put("rows", JSONArray()).put("totalValue", "—"), JSONObject(), "2026-10-17", false, JSONArray(), true))
+    assertEquals("₩300", PortfolioWidgetStore.snapshot(context)!!.getString("totalValue"))
+  }
   @Test fun dailyGateSurvivesRepeatedForegroundAndBackgroundCalls() {
     val r = JSONObject().put("enabled", true)
     val now = 200000000L

@@ -63,6 +63,8 @@ object PortfolioWidgetStore {
     val data = read(context)
     if (state.optString("userId").isEmpty() || data.optString("userId") != state.optString("userId") || data.optString("revision") != state.optString("revision")) return false
     if (data.optString("accountRevision") != state.optString("accountRevision")) return false
+    // A late failed price request must not overwrite a concurrently completed account widget update.
+    if (accountSnapshot && !complete && data.optLong("accountWidgetSyncedAt") != state.optLong("accountWidgetSyncedAt")) return false
     data.put("snapshot", snapshot)
     data.getJSONObject("input").put("quotes", quotes)
     if (holdings != null) data.getJSONObject("input").put("holdings", holdings)

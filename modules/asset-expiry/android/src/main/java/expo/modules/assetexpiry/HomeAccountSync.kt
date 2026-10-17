@@ -150,7 +150,7 @@ object HomeAccountSync {
     return status(context)
   }
   internal fun widgetDue(state: JSONObject, now: Long): Boolean = state.optBoolean("accountWidgetPending") && now - state.optLong("accountWidgetAttempt") >= 15 * 60 * 1000
-  internal fun refreshWidget(context: Context, now: Long = System.currentTimeMillis(),
+  @Synchronized internal fun refreshWidget(context: Context, now: Long = System.currentTimeMillis(),
     load: (String) -> JSONObject? = { WidgetAccountSync.holdings(context, it, true) },
     refresh: (JSONObject) -> WidgetRefreshEngine.Refresh = { WidgetRefreshEngine.refresh(it) }) {
     val state = PortfolioWidgetStore.refreshState(context); val owner = state.optString("userId")
