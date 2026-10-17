@@ -389,11 +389,32 @@
       ],
       "deviceVerification": "not performed; real broker keys, home IPv4/SSID, background location, overnight device refresh and battery usage require user setup and physical phone verification",
       "setupStatus": "requires registered home Wi-Fi, matching allowlisted public IPv4, broker read-access keys and precise/background location permission; no separate gateway server"
+    },
+    {
+      "version": "1.11.0",
+      "changeType": "minor",
+      "versionCode": 21,
+      "description": "설정 최상단 계좌 실행·성공 시각/조회 IP 현황, 계좌 동기화 후 위젯 수익률 반영 및 계좌 재조회 없는 위젯 재시도",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "b486986d63416b603dd33f77a88e4a248c236ef3",
+      "tag": "v1.11.0",
+      "releasedAt": "2026-10-17",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.11.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.11.0.apk",
+      "sha256": "5b05e8471b4560b6456bfe0970121ae192bbf4990c5809c40bb2440039060653",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.11.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.11.0/asset-hub-1.11.0.apk",
+      "checks": [
+        "TypeScript and 26 application/gateway/DB tests passed",
+        "Native Android 28/33 tests passed, including account-to-widget value/profit/return, durable retry throttling, stale revision and late failure rejection, metadata excludes credentials",
+        "Downloaded APK identity, native account widget pending state, timestamp/IP bridge and settings summary verified",
+        "Original package and signing certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and checksum; ZIP contains matching Korean filename",
+        "Latest and tag source verified; main/api-key unchanged; no Supabase schema/function changes in this release"
+      ],
+      "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.11.0",
-    "versionCode": 21
-  }
+  ]
 }
