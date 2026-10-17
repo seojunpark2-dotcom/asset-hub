@@ -467,11 +467,32 @@
         "Latest and tag source verified; main/api-key unchanged; Supabase portfolio-accounts v7 JWT verification enabled; owner binding configured; isolated live auth and snapshot tests passed, no schema changes"
       ],
       "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
+    },
+    {
+      "version": "1.14.0",
+      "changeType": "minor",
+      "versionCode": 24,
+      "description": "계좌 조회 직전 최신 키 자동 수신 및 기관별 기기 권한",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "9e257c9b4bcb1585c2f148a2d189ac008d36ce5e",
+      "tag": "v1.14.0",
+      "releasedAt": "2026-10-18",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.14.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.14.0.apk",
+      "sha256": "38174747fda998095a3e7bfa6b5ba79f24f53e295f0b2759773e35cd707a4581",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.14.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.14.0/asset-hub-1.14.0.apk",
+      "checks": [
+        "TypeScript and 27 application/gateway/DB tests passed",
+        "Native Android 28/33 tests passed, including fresh keys before broker reads, no stale-key fallback, outbox retry without key/broker fetch, Wi-Fi/daily ledger and widget regressions",
+        "Downloaded APK identity, native importSupabaseAccount credentials route, Keystore encryption and Supabase settings UI verified",
+        "Original package and signing certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and checksum; ZIP contains matching Korean filename",
+        "Latest and tag source verified; main/api-key unchanged; Supabase portfolio-accounts v12 JWT verification enabled; owner binding configured; isolated live auth and snapshot tests passed, restricted per-provider credential scope migration applied"
+      ],
+      "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.14.0",
-    "versionCode": 24
-  }
+  ]
 }
