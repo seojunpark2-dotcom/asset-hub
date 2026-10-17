@@ -360,11 +360,35 @@
       ],
       "deviceVerification": "not performed; user fixed-IP gateway and broker keys not configured; real account sync remains pending",
       "setupStatus": "requires user-owned static-IP HTTPS gateway, Kiwoom/Upbit keys and allowlisted server IP"
+    },
+    {
+      "version": "1.10.0",
+      "changeType": "minor",
+      "versionCode": 20,
+      "description": "집 Wi-Fi·공인 IPv4 일치 시 휴대폰 직접 계좌 조회, 한국 날짜 기준 기관별 하루 한 번 정상 잔고, 기기 내 API 키 암호화",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "1b87e45bc610e2486545ad6bdba55f2a0db1d560",
+      "tag": "v1.10.0",
+      "releasedAt": "2026-10-17",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.10.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.10.0.apk",
+      "sha256": "16e5cdaf429ec7d91001152d2180026bd714efe49607c882ac1b9bde3f20bae2",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.10.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.10.0/asset-hub-1.10.0.apk",
+      "checks": [
+        "TypeScript and 26 application/gateway/DB tests passed",
+        "Native Android 28/33 tests including daily account gate, exact balances, JWT and full pagination passed",
+        "Live isolated Auth test verified old-token write denial, authenticated opt-in, snapshot commit/read, consent, malformed rejection, disconnect and revocation; temporary user removed",
+        "Migration applied; local snapshot scope defaults false; JWT verification retained; security advisor unchanged",
+        "Downloaded APK metadata, location permissions, home Wi-Fi worker, native broker adapters and encrypted vault verified",
+        "Original Android package and certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and SHA256 sidecar; ZIP preserves Korean filename",
+        "Latest/tag source verified; main/api-key unchanged"
+      ],
+      "deviceVerification": "not performed; real broker keys, home IPv4/SSID, background location, overnight device refresh and battery usage require user setup and physical phone verification",
+      "setupStatus": "requires registered home Wi-Fi, matching allowlisted public IPv4, broker read-access keys and precise/background location permission; no separate gateway server"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.10.0",
-    "versionCode": 20
-  }
+  ]
 }
