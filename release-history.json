@@ -442,5 +442,10 @@
       ],
       "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.13.0",
+    "versionCode": 23
+  }
 }

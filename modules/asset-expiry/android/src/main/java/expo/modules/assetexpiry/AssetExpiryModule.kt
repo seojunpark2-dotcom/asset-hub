@@ -24,6 +24,7 @@ class AssetExpiryModule : Module() {
     AsyncFunction("removeAccountWifi") { id: String -> HomeAccountSync.removeWifi(requireNotNull(appContext.reactContext), id) }
     AsyncFunction("checkHomeNetwork") { HomeAccountSync.checkNetwork(requireNotNull(appContext.reactContext)) }
     AsyncFunction("saveHomeAccount") { provider: String, access: String, secret: String -> HomeAccountSync.save(requireNotNull(appContext.reactContext), provider, access, secret) }
+    AsyncFunction("importSupabaseAccount") { userId: String, provider: String, jwt: String -> WidgetAccountSync.importCredentials(requireNotNull(appContext.reactContext), userId, provider, jwt) }
     AsyncFunction("removeHomeAccount") { provider: String -> HomeAccountSync.remove(requireNotNull(appContext.reactContext), provider) }
     AsyncFunction("syncHomeAccounts") { HomeAccountSync.syncAndWidget(requireNotNull(appContext.reactContext)) }
     AsyncFunction("ensureHomeAccounts") { HomeAccountSync.ensure(requireNotNull(appContext.reactContext)) }

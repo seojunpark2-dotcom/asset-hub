@@ -1,4 +1,5 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.117.3';
+import {credentialOwner,providerCredentials,credentialDevice} from './credentials.ts';
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 const messages:Record<string,string>={SETUP_REQUIRED:'고정 IP 서버와 해당 기관 API 키 설정이 필요합니다.',KEY_OR_IP:'API 키·만료일·허용 IP 설정을 확인하세요.',RATE_LIMIT:'기관 조회 한도에 도달했습니다. 잠시 후 다시 시도하세요.',SYNC_BUSY:'계좌 동기화 중입니다. 잠시 후 다시 시도하세요.',INCOMPLETE_BALANCE:'잔고의 전체 페이지를 확인하지 못해 기존 자산을 유지합니다.',UNSUPPORTED_ASSET:'현재 자동 연동은 키움 국내 현금 주식·ETF와 업비트 KRW 기준 코인을 지원합니다.',INVALID_BALANCE:'잔고 응답을 검증하지 못해 기존 자산을 유지합니다.',TOO_MANY_ASSETS:'현재 최대 49개 보유자산을 지원합니다.'};
 const hash=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),x=>x.toString(16).padStart(2,'0')).join('');
@@ -19,7 +20,20 @@ Deno.serve(async req=>{
    const bearer=req.headers.get('Authorization')??'';if(!bearer.startsWith('Bearer '))return json({error:'로그인이 필요합니다.'},401);
    const {data,error}=await admin.auth.getUser(bearer.slice(7));if(error||!data.user)return json({error:'로그인을 다시 확인하세요.'},401);userId=data.user.id;
   }
-  if(!['status','connect','sync','disconnect','device','revoke-device','background','local-background','local-snapshot'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
+  if(!['status','connect','sync','disconnect','device','revoke-device','background','local-background','local-snapshot','credential-status','credentials'].includes(body.action))return json({error:'지원하지 않는 요청입니다.'},400);
+  if(body.action==='credential-status'||body.action==='credentials'){
+   const env=(name:string)=>Deno.env.get(name);
+   if(!credentialOwner(userId,env))return json({error:'키 수신 권한이 없습니다. ACCOUNT_KEY_OWNER_USER_ID를 본인 로그인 사용자 ID로 설정하세요.'},403);
+   if(body.action==='credential-status')return json({configured:{kiwoom:!!providerCredentials('kiwoom',env),upbit:!!providerCredentials('upbit',env)}});
+   const token=req.headers.get('X-Widget-Token')??'';
+   if(!/^[0-9a-f]{64}$/.test(token)||typeof body.deviceId!=='string')return json({error:'기기 인증이 필요합니다.'},401);
+   const {data:device,error}=await admin.from('portfolio_widget_devices').select('user_id,local_snapshots').eq('id',body.deviceId).eq('token_hash',await hash(token)).gt('expires_at',new Date().toISOString()).maybeSingle();
+   if(error||!credentialDevice(userId,device))return json({error:'앱의 기기 연결을 갱신하세요.'},403);
+   if(!['kiwoom','upbit'].includes(body.provider))return json({error:'지원하지 않는 기관입니다.'},400);
+   const credentials=providerCredentials(body.provider,env);
+   if(!credentials)return json({error:'Supabase Edge Functions Secrets에 해당 기관 키 두 개를 등록하세요.'},422);
+   return json({ok:true,...credentials});
+  }
   if(body.action==='device'){
    const backgroundAuth=Deno.env.get('ACCOUNT_WIDGET_ANON_JWT')??Deno.env.get('SUPABASE_ANON_KEY')??'';
    let role='';try{role=JSON.parse(atob(backgroundAuth.split('.')[1].replaceAll('-','+').replaceAll('_','/'))).role;}catch{}

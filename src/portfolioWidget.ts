@@ -2,6 +2,8 @@ import {requireOptionalNativeModule} from 'expo';
 import {widgetSnapshot} from './widgetData';
 import type {Holding,Quote} from './types';
 import {accountRequest,homeAccounts} from './accounts';
+import {supabase} from './supabase';
+import type {AccountProvider} from './accounts';
 interface WidgetBridge {setWidgetUser(userId:string):Promise<void>;updateWidget(userId:string,json:string):Promise<void>;setWidgetRefreshInput(userId:string,json:string):Promise<void>;pinWidget():Promise<boolean>;prepareWidgetAccountSync(userId:string,url:string,key:string):Promise<string>;setWidgetAccountAuthorization(userId:string,token:string):Promise<void>;clearWidgetAccountSync():Promise<void>;}
 const native=requireOptionalNativeModule<WidgetBridge>('AssetExpiry');
 let currentUser:string|null=null;let queue:Promise<unknown>=Promise.resolve();
@@ -28,3 +30,11 @@ export async function clearWidgetAccountSync(){
  try{if(deviceId)await accountRequest({action:'revoke-device',deviceId});}finally{await native?.clearWidgetAccountSync();}
 }
 export async function pinPortfolioWidget(){if(!native)throw Error('업데이트 APK를 설치해주세요.');return native.pinWidget();}
+export async function importSupabaseAccount(provider:AccountProvider){
+ if(!supabase||!homeAccounts)throw Error('최신 Android APK에서 로그인하세요.');
+ const {data,error}=await supabase.auth.getSession();const session=data.session;
+ if(error||!session||currentUser!==session.user.id)throw Error('로그인을 다시 확인하세요.');
+ await registerWidgetAccountSync(session.user.id);
+ if(currentUser!==session.user.id)throw Error('로그인 계정이 변경되었습니다.');
+ await homeAccounts.importSupabaseAccount(session.user.id,provider,session.access_token);
+}

@@ -63,6 +63,29 @@ object WidgetAccountSync {
   }
   fun holdings(context: Context, userId: String, localOnly: Boolean = true): JSONObject? = request(context, userId,
     JSONObject().put("action", if (localOnly) "local-background" else "background"))
+  // A foreground user JWT plus a registered device proof are both required. Never persist the user JWT or return keys to JS.
+  fun importCredentials(context: Context, userId: String, provider: String, userJwt: String) {
+    require(provider in listOf("kiwoom", "upbit") && userJwt.split('.').size == 3)
+    require(PortfolioWidgetStore.refreshState(context).optString("userId") == userId)
+    val data = requireNotNull(read(context)) { "기기 연결을 먼저 갱신하세요." }
+    require(data.optString("userId") == userId)
+    val target = URI(data.getString("url")); require(target.scheme == "https")
+    val connection = target.toURL().openConnection() as HttpURLConnection
+    try {
+      connection.requestMethod = "POST"; connection.doOutput = true; connection.connectTimeout = 15000; connection.readTimeout = 20000
+      connection.instanceFollowRedirects = false; connection.useCaches = false
+      connection.setRequestProperty("Content-Type", "application/json")
+      connection.setRequestProperty("apikey", data.getString("apikey"))
+      connection.setRequestProperty("Authorization", "Bearer $userJwt")
+      connection.setRequestProperty("X-Widget-Token", data.getString("token"))
+      val body = JSONObject().put("action", "credentials").put("provider", provider).put("deviceId", data.getString("deviceId"))
+      connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+      check(connection.responseCode == 200) { "키를 받지 못했습니다. Supabase 키 등록·본인 권한·로그인 상태를 확인하세요." }
+      val result = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+      require(result.optBoolean("ok"))
+      HomeAccountSync.saveImported(context, userId, provider, result.getString("access"), result.getString("secret"))
+    } finally { connection.disconnect() }
+  }
   fun request(context: Context, userId: String, body: JSONObject): JSONObject? {
     val data = read(context) ?: if (file(context).baseFile.exists()) throw IllegalStateException("Widget device credential unavailable") else return null
     if (data.optString("userId") != userId) return null

@@ -3,6 +3,7 @@ import {Alert,AppState,Linking,PermissionsAndroid,Platform} from 'react-native';
 import {Button,Card,Field,Label} from './ui';
 import {accountRequest,homeAccounts,homeStatus,type AccountProvider,type HomeStatus,type AccountWifi} from './accounts';
 
+import {importSupabaseAccount} from './portfolioWidget';
 const koreanTime=(value:number|string)=>value?new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'기록 없음';
 export function AccountSyncSummary(){
  const [status,setStatus]=useState<HomeStatus|null>(null);const [error,setError]=useState('');const [checking,setChecking]=useState(false);
@@ -36,9 +37,9 @@ export function AccountSyncSummary(){
 
 export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
  const [status,setStatus]=useState<HomeStatus|null>(null);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');
- const [provider,setProvider]=useState<AccountProvider|null>(null);const [access,setAccess]=useState('');const [secret,setSecret]=useState('');
+ const [cloud,setCloud]=useState<Record<AccountProvider,boolean>|null>(null);const [cloudError,setCloudError]=useState('');
  const [editing,setEditing]=useState<AccountWifi|null>(null);
- const load=useCallback(async()=>{try{setStatus(await homeStatus());}catch(e){setMessage(e instanceof Error?e.message:'설정 조회 실패');}},[]);
+ const load=useCallback(async()=>{const [local,remote]=await Promise.allSettled([homeStatus(),accountRequest<{configured:Record<AccountProvider,boolean>}>({action:'credential-status'})]);if(local.status==='fulfilled')setStatus(local.value);else setMessage('설정 조회 실패');if(remote.status==='fulfilled'){setCloud(remote.value.configured);setCloudError('');}else{setCloud(null);setCloudError(remote.reason instanceof Error?remote.reason.message:'서버 키 설정 조회 실패');}},[]);
  useEffect(()=>{void load();const sub=AppState.addEventListener('change',s=>{if(s==='active')void load();});return()=>sub.remove();},[load]);
  async function run(task:()=>Promise<unknown>,success:string){setBusy(true);setMessage('');try{await task();setMessage(success);await load();}catch(e){setMessage(e instanceof Error?e.message:'설정 실패');}finally{setBusy(false);}}
  async function register(){
@@ -47,10 +48,10 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
   if(permissions[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION]!=='granted')throw Error('Wi-Fi 확인을 위해 정확한 위치 권한을 허용하세요.');
   await homeAccounts.registerHomeWifi();
  }
- function save(){if(!provider||!homeAccounts)return;const selected=provider;const bridge=homeAccounts;
-  Alert.alert('계좌 자동 연동',`${selected==='kiwoom'?'키움 국내 현금 주식·ETF':'업비트 KRW 코인'}의 수동 자산을 실제 잔고로 교체합니다. API 키는 이 휴대폰에 암호화해 보관합니다. 등록된 Wi-Fi 전체에서 하루 한 번 성공한 잔고만 반영합니다.`,[{text:'취소',style:'cancel'},{text:'동의하고 저장',onPress:()=>void run(async()=>{
-   await bridge.saveHomeAccount(selected,access,secret);setAccess('');setSecret('');setProvider(null);await bridge.syncHomeAccounts();await onSynced();
-  },'설정을 저장했습니다. 아래 기관별 최근 동기화와 오류를 확인하세요.')}]);
+ function save(selected:AccountProvider){if(!homeAccounts)return;const bridge=homeAccounts;
+  Alert.alert('Supabase 키 가져오기',`본인 계정에 등록된 키를 받아 휴대폰에 암호화해 보관합니다. ${selected==='kiwoom'?'키움 국내 현금 주식·ETF':'업비트 KRW 코인'}의 수동 자산을 실제 잔고로 교체하는 데 동의합니다.`,[{text:'취소',style:'cancel'},{text:'동의하고 가져오기',onPress:()=>void run(async()=>{
+   await importSupabaseAccount(selected);await bridge.syncHomeAccounts();await onSynced();
+  },'키를 안전하게 저장했습니다. 기관별 최근 동기화와 오류를 확인하세요.')}]);
  }
  return <Card><Label bold size={20}>계좌 자동 연동</Label>
   <Label muted size={12}>등록한 Wi-Fi 이름과 공인 IP 조합이 일치할 때 휴대폰에서 직접 조회합니다. 여러 장소를 이동해도 한국 날짜 기준 기관별 하루 한 번만 정상 잔고를 가져옵니다. 별도 중계 서버는 필요하지 않습니다.</Label>
@@ -76,16 +77,15 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
   {(['kiwoom','upbit'] as const).map(p=>{const record=status?.providers[p];return <Card key={p}>
    <Label bold>{p==='kiwoom'?'키움증권':'업비트'} · {record?.configured?(status?.networks?.length?'자동 조회 설정됨':'Wi-Fi 등록 대기'):'API 키 등록 필요'}</Label>
    <Label muted size={12}>{record?.lastSynced?'최근 동기화 '+new Date(record.lastSynced).toLocaleString('ko-KR'):'아직 계좌 동기화에 성공하지 않았습니다.'}</Label>
+   <Label muted size={12}>Supabase 키: {cloud?.[p]?'등록됨':'미등록 또는 확인 필요'}</Label>
    {!!record?.error&&<Label size={13}>{record.error}</Label>}
-   <Button secondary disabled={busy||!status?.networks?.length} title={record?.configured?'API 키 변경':'API 키 입력'} onPress={()=>{setAccess('');setSecret('');setProvider(p);}}/>
+   <Button secondary disabled={busy||!status?.networks?.length||!cloud?.[p]} title={record?.configured?'Supabase 키 다시 가져오기':'Supabase에서 키 가져오기'} onPress={()=>save(p)}/>
    {(record?.configured||record?.lastSynced)&&<Button secondary disabled={busy} title="계좌 연결 해제" onPress={()=>Alert.alert('연결 해제','휴대폰의 API 키를 삭제하고 마지막 잔고를 수동 자산으로 유지합니다.',[{text:'취소',style:'cancel'},{text:'연결 해제',onPress:()=>void run(async()=>{await homeAccounts?.removeHomeAccount(p);await accountRequest({action:'disconnect',provider:p});await onSynced();},'자동 조회를 중단했습니다.')}])}/>}
   </Card>;})}
-  {provider&&<Card><Label bold>{provider==='kiwoom'?'키움 실전 REST App Key·Secret':'업비트 자산조회 전용 Access Key·Secret'}</Label>
-   <Field label={provider==='kiwoom'?'App Key':'Access Key'} value={access} onChange={setAccess} password/>
-   <Field label={provider==='kiwoom'?'App Secret':'Secret Key'} value={secret} onChange={setSecret} password/>
-   <Button disabled={busy||!access.trim()||!secret.trim()} title="동의 후 키 저장" onPress={save}/>
-   <Button secondary disabled={busy} title="입력 취소" onPress={()=>{setAccess('');setSecret('');setProvider(null);}}/>
-  </Card>}
+  <Label muted size={12}>Supabase → asset-hub → Edge Functions → Secrets에 기관 키 두 개를 등록한 뒤 설정 상태를 확인하고 키 가져오기를 누르세요. Publishable key 입력란에 넣지 않습니다. 키를 바꾸면 다시 가져오세요. 연결 해제는 휴대폰 키만 삭제하며 서버 Secrets는 유지합니다.</Label>
+  <Label muted size={12}>키움: KIWOOM_APP_KEY · KIWOOM_APP_SECRET{ '\n' }업비트: UPBIT_ACCESS_KEY · UPBIT_SECRET_KEY</Label>
+  {!!cloudError&&<Label size={13}>{cloudError}</Label>}
+  <Button secondary disabled={busy} title="Supabase 키 등록 상태 확인" onPress={()=>void run(load,'서버 키 등록 상태를 확인했습니다.')}/>
   <Button secondary disabled={busy} title="오늘 동기화 상태 확인" onPress={()=>void run(async()=>{await homeAccounts?.syncHomeAccounts();await onSynced();},'오늘 상태를 확인했습니다. 이미 조회한 기관은 다시 조회하지 않습니다.')}/>
   <Label muted size={12}>Android가 약 15분 간격의 작업 기회에 등록 Wi-Fi 여부를 확인하며 절전 상태에서는 지연됩니다. 조회 실패는 30분 이상 뒤 재시도합니다. 등록된 곳에 연결되지 않은 날은 건너뛰고 과거 날짜를 몰아서 조회하지 않습니다. Wi-Fi 추가·수정·삭제로 하루 한 번 제한이 초기화되지 않습니다. 시세 갱신 주기는 별도로 유지됩니다. 미래에셋·예수금·신용·해외주식 계좌 연동은 지원하지 않습니다.</Label>
  </Card>;

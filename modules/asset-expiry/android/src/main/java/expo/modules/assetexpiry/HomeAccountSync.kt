@@ -21,7 +21,7 @@ import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Broker secrets never cross the bridge back to JS, enter logs, or leave the device except to their broker. */
+/** Broker secrets are imported over authenticated HTTPS, encrypted locally, and never returned to JS or logs. */
 object HomeAccountSync {
   private const val WORK = "portfolio-home-account-daily"
   private fun vault(context: Context) = DeviceVault(context, "portfolio-home-account")
@@ -106,6 +106,10 @@ object HomeAccountSync {
     // Keep today's fetched snapshot/day even when credentials are edited: no second account fetch today.
     record.put("access", access.trim()).put("secret", secret.trim()).put("enabled", true).put("consent", true)
     data.put(provider, record); vault(context).write(data); ensure(context)
+  }
+  @Synchronized fun saveImported(context: Context, userId: String, provider: String, access: String, secret: String) {
+    require(user(context) == userId && userId.isNotEmpty()) { "로그인 계정이 변경되어 키 저장을 취소했습니다." }
+    save(context, provider, access, secret)
   }
   @Synchronized fun remove(context: Context, provider: String) {
     require(provider in listOf("kiwoom", "upbit"))

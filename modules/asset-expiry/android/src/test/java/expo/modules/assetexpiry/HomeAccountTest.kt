@@ -18,6 +18,13 @@ import javax.crypto.spec.SecretKeySpec
 @Config(sdk = [28, 33])
 class HomeAccountTest {
   @Before fun initialize() { WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication()) }
+  @Test fun importedKeysRejectAChangedLoginBeforeReadingOrWritingTheVault() {
+    val context = RuntimeEnvironment.getApplication()
+    PortfolioWidgetStore.setUser(context, "current-owner")
+    assertThrows(IllegalArgumentException::class.java) { HomeAccountSync.saveImported(context, "previous-owner", "kiwoom", "dummy-access", "dummy-secret") }
+    assertThrows(IllegalArgumentException::class.java) { WidgetAccountSync.importCredentials(context, "previous-owner", "kiwoom", "a.b.c") }
+    assertFalse(HomeAccountSync.status(context).contains("dummy-secret"))
+  }
   @Test fun statusIncludesExecutionTimesAndUsedIpButNeverCredentialsOrBalances() {
     val r = JSONObject().put("enabled", true).put("access", "private-access").put("secret", "private-secret")
       .put("attempt", 123L).put("fetchedAt", 124L).put("synced", "2026-10-17T01:02:03Z").put("usedIp", "203.0.113.7").put("pending", JSONArray())
