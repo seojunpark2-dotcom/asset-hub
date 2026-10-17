@@ -415,11 +415,32 @@
         "Latest and tag source verified; main/api-key unchanged; no Supabase schema/function changes in this release"
       ],
       "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
+    },
+    {
+      "version": "1.12.0",
+      "changeType": "minor",
+      "versionCode": 22,
+      "description": "복수 Wi-Fi/공인 IPv4 등록·수정·삭제, 기존 설정 이전 및 장소 전체의 기관별 하루 한 번 조회",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "94d4049677919db5f48353ff0cbac38a4588d5b2",
+      "tag": "v1.12.0",
+      "releasedAt": "2026-10-17",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.12.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.12.0.apk",
+      "sha256": "41c8ac2e61c7af4d392b4198d9dd6c13f3998406aa62f12268e7a18d07c9e898",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.12.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.12.0/asset-hub-1.12.0.apk",
+      "checks": [
+        "TypeScript and 26 application/gateway/DB tests passed",
+        "Native Android 28/33 tests passed, including Wi-Fi migration preserving daily ledger, exact pair matching, duplicates/limits/private IP rejection, edits/deletions and shared daily gate; widget regressions passed",
+        "Downloaded APK identity, native account widget pending state, timestamp/IP bridge and settings summary verified",
+        "Original package and signing certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and checksum; ZIP contains matching Korean filename",
+        "Latest and tag source verified; main/api-key unchanged; no Supabase schema/function changes in this release"
+      ],
+      "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.12.0",
-    "versionCode": 22
-  }
+  ]
 }
