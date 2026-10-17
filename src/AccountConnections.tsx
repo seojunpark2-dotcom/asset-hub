@@ -35,7 +35,7 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
    <Label muted size={12}>{record?.lastSynced?'최근 동기화 '+new Date(record.lastSynced).toLocaleString('ko-KR'):'아직 계좌 동기화에 성공하지 않았습니다.'}</Label>
    {!!record?.error&&<Label size={13}>{record.error}</Label>}
    <Button secondary disabled={busy||!status?.ssid} title={record?.configured?'API 키 변경':'API 키 입력'} onPress={()=>{setAccess('');setSecret('');setProvider(p);}}/>
-   {record?.configured&&<Button secondary disabled={busy} title="계좌 연결 해제" onPress={()=>Alert.alert('연결 해제','휴대폰의 API 키를 삭제하고 마지막 잔고를 수동 자산으로 유지합니다.',[{text:'취소',style:'cancel'},{text:'연결 해제',onPress:()=>void run(async()=>{await homeAccounts?.removeHomeAccount(p);await accountRequest({action:'disconnect',provider:p});await onSynced();},'자동 조회를 중단했습니다.')}])}/>}
+   {(record?.configured||record?.lastSynced)&&<Button secondary disabled={busy} title="계좌 연결 해제" onPress={()=>Alert.alert('연결 해제','휴대폰의 API 키를 삭제하고 마지막 잔고를 수동 자산으로 유지합니다.',[{text:'취소',style:'cancel'},{text:'연결 해제',onPress:()=>void run(async()=>{await homeAccounts?.removeHomeAccount(p);await accountRequest({action:'disconnect',provider:p});await onSynced();},'자동 조회를 중단했습니다.')}])}/>}
   </Card>;})}
   {provider&&<Card><Label bold>{provider==='kiwoom'?'키움 실전 REST App Key·Secret':'업비트 자산조회 전용 Access Key·Secret'}</Label>
    <Field label={provider==='kiwoom'?'App Key':'Access Key'} value={access} onChange={setAccess} password/>
