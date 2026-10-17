@@ -29,23 +29,27 @@ object HomeAccountSync {
   private fun read(context: Context): JSONObject {
     val data = vault(context).read() ?: JSONObject()
     require(data.optString("userId", user(context)) == user(context)) { "로그인을 다시 확인하세요." }
-    return data.put("userId", user(context))
+    data.put("userId", user(context))
+    if (AccountWifiRegistry.migrate(data) && user(context).isNotEmpty()) vault(context).write(data)
+    return data
   }
   @Synchronized fun clear(context: Context) { vault(context).clear(); WorkManager.getInstance(context).cancelUniqueWork(WORK) }
   fun ensure(context: Context) {
     val data = read(context)
-    if (user(context).isEmpty() || data.optString("ssid").isEmpty()) return
+    if (user(context).isEmpty() || AccountWifiRegistry.entries(data).length() == 0) {
+      WorkManager.getInstance(context).cancelUniqueWork(WORK); return
+    }
     val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(WORK, ExistingPeriodicWorkPolicy.KEEP,
       PeriodicWorkRequestBuilder<HomeAccountWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
   }
   @Suppress("DEPRECATION")
   fun wifi(context: Context): Pair<Network, String> {
-    require(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) { "집 Wi-Fi 확인을 위해 정확한 위치 권한을 허용하세요." }
+    require(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) { "등록 Wi-Fi 확인을 위해 정확한 위치 권한을 허용하세요." }
     val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val network = cm.activeNetwork ?: error("집 Wi-Fi에 연결하세요.")
-    val caps = cm.getNetworkCapabilities(network) ?: error("집 Wi-Fi에 연결하세요.")
-    require(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) && !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) { "VPN을 끄고 집 Wi-Fi에 연결하세요." }
+    val network = cm.activeNetwork ?: error("Wi-Fi에 연결하세요.")
+    val caps = cm.getNetworkCapabilities(network) ?: error("Wi-Fi에 연결하세요.")
+    require(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) && !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) { "VPN을 끄고 Wi-Fi에 연결하세요." }
     val info = (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).connectionInfo
     val ssid = info.ssid?.removeSurrounding("\"") ?: ""
     require(ssid.isNotBlank() && ssid != "<unknown ssid>") { "Wi-Fi 이름을 확인할 수 없습니다. 위치 기능과 정확한 위치 권한을 켜세요. 백그라운드는 위치 권한을 항상 허용해야 합니다." }
@@ -71,10 +75,21 @@ object HomeAccountSync {
     require(user(context).isNotEmpty())
     val (network, ssid) = wifi(context)
     val address = ip(network)
-    val data = read(context).put("ssid", ssid).put("ip", address)
-      .put("observedSsid", ssid).put("observedIp", address).put("ipCheckedAt", System.currentTimeMillis())
+    val data = read(context)
+    AccountWifiRegistry.add(data, ssid, address)
+    data.put("observedSsid", ssid).put("observedIp", address).put("ipCheckedAt", System.currentTimeMillis())
     vault(context).write(data); ensure(context)
     return status(context)
+  }
+  @Synchronized fun updateWifi(context: Context, id: String, label: String, ssid: String, ip: String): String {
+    require(user(context).isNotEmpty())
+    val data = read(context); AccountWifiRegistry.update(data, id, label, ssid, ip)
+    vault(context).write(data); ensure(context); return status(context)
+  }
+  @Synchronized fun removeWifi(context: Context, id: String): String {
+    require(user(context).isNotEmpty())
+    val data = read(context); AccountWifiRegistry.remove(data, id)
+    vault(context).write(data); ensure(context); return status(context)
   }
   @Synchronized fun checkNetwork(context: Context): String {
     val (network, ssid) = wifi(context)
@@ -86,7 +101,7 @@ object HomeAccountSync {
     require(provider in listOf("kiwoom", "upbit") && access.trim().length in 1..2048 && secret.trim().length in 1..2048)
     require(user(context).isNotEmpty())
     val data = read(context)
-    require(data.optString("ssid").isNotEmpty()) { "집 Wi-Fi부터 등록하세요." }
+    require(AccountWifiRegistry.entries(data).length() > 0) { "조회에 사용할 Wi-Fi부터 등록하세요." }
     val record = data.optJSONObject(provider) ?: JSONObject()
     // Keep today's fetched snapshot/day even when credentials are edited: no second account fetch today.
     record.put("access", access.trim()).put("secret", secret.trim()).put("enabled", true).put("consent", true)
@@ -104,7 +119,7 @@ object HomeAccountSync {
       providers.put(p, providerStatus(r))
     }
     val widget = PortfolioWidgetStore.refreshState(context)
-    return JSONObject().put("ssid", data.optString("ssid")).put("ip", data.optString("ip")).put("providers", providers)
+    return JSONObject().put("networks", AccountWifiRegistry.entries(data)).put("providers", providers)
       .put("observedIp", data.optString("observedIp")).put("observedSsid", data.optString("observedSsid")).put("ipCheckedAt", data.optLong("ipCheckedAt"))
       .put("widgetPending", widget.optBoolean("accountWidgetPending")).put("widgetSyncedAt", widget.optLong("accountWidgetSyncedAt"))
       .put("backgroundPermission", Build.VERSION.SDK_INT < 29 || context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED).toString()
@@ -119,12 +134,12 @@ object HomeAccountSync {
     val data = read(context); val now = System.currentTimeMillis(); val day = WidgetRefreshScheduler.day(now)
     val targets = listOf("kiwoom", "upbit").filter { p -> val r = data.optJSONObject(p); r != null && r.optBoolean("enabled") && (r.has("pending") || due(r, day, now)) }
     if (targets.isEmpty()) return status(context)
-    // Refuse every provider call until both home SSID and public IPv4 match registration.
+    // Any registered SSID/IP pair shares the same provider ledger; switching networks cannot bypass it.
     val (network, ssid) = wifi(context)
-    require(data.optString("ssid").isNotEmpty() && data.optString("ssid") == ssid) { "등록한 집 Wi-Fi에서만 계좌를 조회합니다." }
+    require(AccountWifiRegistry.hasSsid(data, ssid)) { "등록한 Wi-Fi에서만 계좌를 조회합니다." }
     val address = ip(network)
     data.put("observedIp", address).put("observedSsid", ssid).put("ipCheckedAt", System.currentTimeMillis()); vault(context).write(data)
-    require(address == data.optString("ip")) { "집 공인 IP가 바뀌었습니다. 기관 허용 IP를 변경한 뒤 집 Wi-Fi를 다시 등록하세요." }
+    require(AccountWifiRegistry.matches(data, ssid, address)) { "등록한 Wi-Fi의 공인 IP와 다릅니다. 기관 허용 IP와 Wi-Fi 등록 목록을 확인하세요." }
     for (provider in targets) {
       val r = data.getJSONObject(provider)
       try {

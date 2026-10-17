@@ -20,6 +20,8 @@ class AssetExpiryModule : Module() {
     AsyncFunction("setWidgetAccountAuthorization") { userId: String, token: String -> WidgetAccountSync.setAuthorization(requireNotNull(appContext.reactContext), userId, token) }
     AsyncFunction("homeAccountStatus") { HomeAccountSync.status(requireNotNull(appContext.reactContext)) }
     AsyncFunction("registerHomeWifi") { HomeAccountSync.registerHome(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("updateAccountWifi") { id: String, label: String, ssid: String, ip: String -> HomeAccountSync.updateWifi(requireNotNull(appContext.reactContext), id, label, ssid, ip) }
+    AsyncFunction("removeAccountWifi") { id: String -> HomeAccountSync.removeWifi(requireNotNull(appContext.reactContext), id) }
     AsyncFunction("checkHomeNetwork") { HomeAccountSync.checkNetwork(requireNotNull(appContext.reactContext)) }
     AsyncFunction("saveHomeAccount") { provider: String, access: String, secret: String -> HomeAccountSync.save(requireNotNull(appContext.reactContext), provider, access, secret) }
     AsyncFunction("removeHomeAccount") { provider: String -> HomeAccountSync.remove(requireNotNull(appContext.reactContext), provider) }
