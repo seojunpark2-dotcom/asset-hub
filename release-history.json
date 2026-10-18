@@ -519,11 +519,32 @@
         "Latest and tag source verified; main/api-key unchanged; No Supabase schema/function changes; existing owner/device key access preserved; main/api-key unchanged"
       ],
       "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
+    },
+    {
+      "version": "1.16.0",
+      "changeType": "minor",
+      "versionCode": 26,
+      "description": "계좌 투자원금 1원 미만 자산 자동 삭제 및 기존 데이터·앱 캐시·위젯 정리",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "50ec5de9c51f6aedbbca7ea98b94b8bfd98a1f3e",
+      "tag": "v1.16.0",
+      "releasedAt": "2026-10-18",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.16.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.16.0.apk",
+      "sha256": "47e5f1666969899caf95b0b2a72a740640959bb1216328abc249ea90c67d6a6e",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.16.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.16.0/asset-hub-1.16.0.apk",
+      "checks": [
+        "TypeScript and 28 application/finance/provider/account/DB tests passed",
+        "Native Android 28/33 tests passed including exact one-won boundary, merged lots, removal from widget totals and preserving the daily ledger",
+        "Supabase cleanup migration applied; two legacy account rows deleted, zero remaining; manual holdings preserved and server-only RPC permissions verified",
+        "Downloaded APK identity 1.16.0/versionCode26, original package and signing certificate matched; APK v2 integrity verified",
+        "Remote APK digest, downloaded checksum and Korean-named ZIP APK SHA256 match",
+        "Latest and tag source verified; main/api-key unchanged"
+      ],
+      "deviceVerification": "not performed; actual phone installation/broker/Wi-Fi/background behavior requires physical phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.16.0",
-    "versionCode": 26
-  }
+  ]
 }

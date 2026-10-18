@@ -13,6 +13,8 @@
 
 가격은 5분간 재사용하며 실패 시 실제 캐시 가격 또는 시세 미확인 상태를 표시합니다. 조회한 가격이 평가금액·손익·원금 대비 수익률·분석 비중·위젯에 반영됩니다. 수수료·세금·배당은 제외합니다. 공급자 지원·실시간 제공·영구 사용을 보장하지 않습니다.
 
+계좌로 가져온 자산은 투자원금이 1원 미만이면 저장 데이터·앱 캐시·위젯에서 삭제합니다. 정확히 1원 이상과 수동 입력 자산은 유지합니다. 금융기관 실제 계좌의 잔고는 변경하지 않습니다.
+
 ## 개발
 npm ci → npm run typecheck → npm test → npm start. .env에는 Supabase URL과 공개 publishable key만 설정합니다. [설정](docs/SETUP.md), [미국주식 키](docs/API_KEYS.md), [설계](docs/ARCHITECTURE.md), [검증 이력](docs/VALIDATION.md).
 
