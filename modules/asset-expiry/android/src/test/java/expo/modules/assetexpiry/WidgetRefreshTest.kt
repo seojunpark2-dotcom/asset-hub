@@ -17,6 +17,19 @@ import androidx.work.WorkInfo
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28, 33])
 class WidgetRefreshTest {
+  @Test fun nativeRequestsExplicitlyIdentifyTheAppInsteadOfUsingDalvikDefaults() {
+    val connection = object : java.net.HttpURLConnection(java.net.URL("https://example.invalid")) {
+      override fun connect() {}
+      override fun disconnect() {}
+      override fun usingProxy() = false
+    }
+    WidgetRefreshEngine.configureRequest(connection)
+    assertEquals("AssetHub/1.17.0 (Android; personal portfolio)", connection.getRequestProperty("User-Agent"))
+    assertEquals("application/json", connection.getRequestProperty("Accept"))
+    assertFalse(connection.instanceFollowRedirects)
+    assertEquals(12000, connection.connectTimeout)
+    assertEquals(12000, connection.readTimeout)
+  }
   private fun instant(value: String) = Instant.parse(value).toEpochMilli()
   @Before fun initialize() { WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication()) }
   private fun holding(id: String, type: String, symbol: String, quantity: String, cost: String, currency: String = "KRW") = JSONObject()

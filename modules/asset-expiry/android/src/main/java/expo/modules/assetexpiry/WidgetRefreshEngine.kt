@@ -16,7 +16,7 @@ import java.util.TimeZone
 object WidgetRefreshEngine {
   data class Refresh(val snapshot: JSONObject, val quotes: JSONObject, val complete: Boolean, val errors: List<String> = emptyList())
   private fun failure(e: Exception): String = when (e) {
-    is HttpError -> "HTTP ${e.status}"
+    is HttpError -> if (e.status == 429) "HTTP 429 · 시세 조회 제한. 잠시 후 재시도하세요." else "HTTP ${e.status}"
     is java.net.SocketTimeoutException -> "연결 시간 초과"
     is java.net.UnknownHostException -> "서버 주소 확인 실패"
     is java.io.IOException -> "네트워크 연결 실패"
@@ -24,12 +24,19 @@ object WidgetRefreshEngine {
   }
   private val math = MathContext(40, RoundingMode.HALF_UP)
   private class HttpError(val status: Int) : Exception()
+  internal fun configureRequest(connection: HttpURLConnection) {
+    // Yahoo can reject Android's implicit Dalvik identity with HTTP 429.
+    // Identify this app explicitly; do not impersonate a browser or bypass a rate limit.
+    connection.setRequestProperty("User-Agent", "AssetHub/1.17.0 (Android; personal portfolio)")
+    connection.setRequestProperty("Accept", "application/json")
+    connection.instanceFollowRedirects = false
+    connection.connectTimeout = 12000; connection.readTimeout = 12000
+  }
   private fun request(url: String, network: Network? = null): String {
     val target = URI(url).toURL()
     val connection = (network?.openConnection(target) ?: target.openConnection()) as HttpURLConnection
     try {
-      connection.instanceFollowRedirects = false
-      connection.connectTimeout = 12000; connection.readTimeout = 12000
+      configureRequest(connection)
       if (connection.responseCode != 200) throw HttpError(connection.responseCode)
       return connection.inputStream.bufferedReader().use { it.readText() }
     } finally { connection.disconnect() }
