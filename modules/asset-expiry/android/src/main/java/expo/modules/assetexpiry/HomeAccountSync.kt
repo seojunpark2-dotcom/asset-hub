@@ -127,6 +127,7 @@ object HomeAccountSync {
     return JSONObject().put("networks", AccountWifiRegistry.entries(data)).put("providers", providers)
       .put("observedIp", data.optString("observedIp")).put("observedSsid", data.optString("observedSsid")).put("ipCheckedAt", data.optLong("ipCheckedAt"))
       .put("dailyWifiDay", widget.optString("dailyWifiDay")).put("widgetPending", widget.optBoolean("accountWidgetPending")).put("widgetSyncedAt", widget.optLong("accountWidgetSyncedAt"))
+      .put("widgetStage", widget.optString("widgetStage")).put("widgetError", widget.optString("widgetError")).put("widgetAttempt", widget.optLong("accountWidgetAttempt"))
       .put("backgroundPermission", Build.VERSION.SDK_INT < 29 || context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED).toString()
   }
   internal fun providerStatus(r: JSONObject): JSONObject = JSONObject()
@@ -183,11 +184,19 @@ object HomeAccountSync {
     if (!batchDue(PortfolioWidgetStore.refreshState(context), day)) return status(context)
     val data = read(context)
     // One registered Wi-Fi/IP gate covers account reads, pending uploads and widget prices.
-    val (network, ssid) = wifi(context)
-    require(AccountWifiRegistry.hasSsid(data, ssid)) { "등록한 Wi-Fi에서 하루 통합 갱신을 실행합니다." }
-    val address = ip(network)
+    val (network, ssid) = try { wifi(context) } catch (e: Exception) {
+      PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "Wi-Fi 확인 필요", "등록 Wi-Fi·위치 권한·위치 기능·VPN 설정을 확인하세요."); throw e
+    }
+    if (!AccountWifiRegistry.hasSsid(data, ssid)) {
+      PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "등록 Wi-Fi 대기", "현재 Wi-Fi가 등록 목록에 없습니다."); return status(context)
+    }
+    val address = try { ip(network) } catch (e: Exception) {
+      PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "공인 IP 확인 실패", "Wi-Fi의 인터넷 연결과 공인 IP 확인을 다시 시도하세요."); throw e
+    }
     data.put("observedIp", address).put("observedSsid", ssid).put("ipCheckedAt", now); vault(context).write(data)
-    require(AccountWifiRegistry.matches(data, ssid, address)) { "등록 Wi-Fi의 공인 IP와 다릅니다. 기관 허용 IP와 등록 목록을 확인하세요." }
+    if (!AccountWifiRegistry.matches(data, ssid, address)) {
+      PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "공인 IP 불일치", "등록 Wi-Fi의 공인 IP와 다릅니다. 기관 허용 IP와 등록 목록을 확인하세요."); return status(context)
+    }
     syncAccounts(context, data, owner, network, address, now, day)
     if (accountsReady(data, day)) {
       val state = PortfolioWidgetStore.refreshState(context)
@@ -195,25 +204,64 @@ object HomeAccountSync {
       try {
         refreshWidget(context, now, refresh = { WidgetRefreshEngine.refreshOnWifi(it, network) },
           beforeCommit = { require(wifi(context).first == network) { "Wi-Fi가 변경되어 다음 기회에 갱신합니다." } })
-      } catch (_: Exception) { /* Keep the prior daily snapshot; retry only on eligible Wi-Fi. */ }
+      } catch (_: Exception) {
+        PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "재시도 대기", "위젯 처리 실패. 등록 Wi-Fi·기기 연결 상태를 확인하세요.")
+      }
+    } else {
+      PortfolioWidgetStore.noteWidgetProgress(context, PortfolioWidgetStore.refreshState(context), "계좌 동기화 대기", "아직 모든 기관의 오늘 동기화가 끝나지 않았습니다. 기관별 최근 성공 시각과 오류를 확인하세요.")
     }
     return status(context)
   }
   internal fun widgetDue(state: JSONObject, now: Long): Boolean = state.optBoolean("accountWidgetPending") && now - state.optLong("accountWidgetAttempt") >= 15 * 60 * 1000
+  // Explicit retry resumes only the widget stage. Never fetch broker keys or balances here.
+  @Synchronized fun retryWidget(context: Context): String {
+    val now = System.currentTimeMillis(); val day = WidgetRefreshScheduler.day(now)
+    val state = PortfolioWidgetStore.refreshState(context)
+    if (state.optString("userId").isEmpty() || !batchDue(state, day)) return status(context)
+    if (!state.optBoolean("accountWidgetPending")) error("먼저 오늘 계좌 동기화를 완료하세요.")
+    require(accountsReady(read(context), day)) { "아직 오늘 계좌 동기화가 완료되지 않았습니다. 기관별 오류를 확인하세요." }
+    require(manualWidgetDue(state, now)) { "연속 재시도는 1분 뒤에 가능합니다." }
+    try {
+      val (network, ssid) = wifi(context); val address = ip(network)
+      require(AccountWifiRegistry.matches(read(context), ssid, address)) { "등록 Wi-Fi와 공인 IP를 확인하세요." }
+      refreshWidget(context, now, force = true, refresh = { WidgetRefreshEngine.refreshOnWifi(it, network) },
+        beforeCommit = { require(wifi(context).first == network) })
+    } catch (e: Exception) {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "재시도 대기", "위젯 처리 실패. 등록 Wi-Fi·기기 연결·위치 권한을 확인하세요.")
+      throw e
+    }
+    return status(context)
+  }
+  internal fun manualWidgetDue(state: JSONObject, now: Long): Boolean = state.optBoolean("accountWidgetPending") &&
+    (state.optLong("accountWidgetAttempt") == 0L || now - state.optLong("accountWidgetAttempt") >= 60000)
   @Synchronized internal fun refreshWidget(context: Context, now: Long = System.currentTimeMillis(),
     load: (String) -> JSONObject? = { WidgetAccountSync.holdings(context, it, true) },
     beforeCommit: () -> Unit = {},
+    force: Boolean = false,
     refresh: (JSONObject) -> WidgetRefreshEngine.Refresh = { WidgetRefreshEngine.refresh(it) }) {
     val state = PortfolioWidgetStore.refreshState(context); val owner = state.optString("userId")
-    if (!widgetDue(state, now) || owner.isEmpty()) return
-    val input = state.optJSONObject("input") ?: return
+    if ((!force && !widgetDue(state, now)) || !state.optBoolean("accountWidgetPending") || owner.isEmpty()) return
+    val input = state.optJSONObject("input") ?: run {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "설정 대기", "위젯 입력 자료가 없습니다. 앱 홈 화면을 연 뒤 다시 시도하세요."); return
+    }
     PortfolioWidgetStore.noteAccountWidgetAttempt(context, state, now)
-    val result = load(owner) ?: return
-    require(result.optBoolean("ok"))
+    PortfolioWidgetStore.noteWidgetProgress(context, state, "자산 목록 수신")
+    val result = try { load(owner) ?: error("missing device") } catch (_: Exception) {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "기기 연결 확인 필요", "저장된 자산을 받지 못했습니다. 앱 로그인·계좌 연결을 확인하세요."); return
+    }
+    if (!result.optBoolean("ok")) {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "자산 수신 실패", "저장된 자산 조회가 실패했습니다. 앱 로그인·계좌 연결을 확인하세요."); return
+    }
     input.put("holdings", result.getJSONArray("holdings"))
+    PortfolioWidgetStore.noteWidgetProgress(context, state, "시세·환율 조회")
     val quotes = refresh(input)
+    if (!quotes.complete) {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "시세 조회 실패", quotes.errors.joinToString("\n").ifEmpty { "일부 시세를 받지 못했습니다. 등록 Wi-Fi에서 다시 시도하세요." }); return
+    }
     beforeCommit()
-    PortfolioWidgetStore.commitRefresh(context, state, quotes.snapshot, quotes.quotes, WidgetRefreshScheduler.day(now), quotes.complete, input.getJSONArray("holdings"), true)
+    if (!PortfolioWidgetStore.commitRefresh(context, state, quotes.snapshot, quotes.quotes, WidgetRefreshScheduler.day(now), quotes.complete, input.getJSONArray("holdings"), true)) {
+      PortfolioWidgetStore.noteWidgetProgress(context, state, "저장 재시도 대기", "갱신 중 자산 또는 설정이 바뀌었습니다. 다시 시도하세요.")
+    }
   }
 }
 

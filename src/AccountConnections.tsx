@@ -15,6 +15,7 @@ export function AccountSyncSummary(){
   return()=>{active=false;alive.current=false;clearInterval(timer);listener.remove();};
  },[load]);
  async function check(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.checkHomeNetwork()));}catch(e){setError(e instanceof Error?e.message:'IP 확인 실패');}finally{setChecking(false);}}
+ async function retry(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.retryHomeWidget()));}catch(e){setError(e instanceof Error?e.message:'위젯 재시도 실패');await load();}finally{setChecking(false);}}
  return <Card><Label bold size={20}>계좌 조회 현황</Label>
   <Label muted size={12}>한국 시간 · 등록 Wi-Fi에서 계좌·시세·위젯 하루 한 번 통합 갱신</Label>
   {(['kiwoom','upbit'] as const).map(p=>{const r=status?.providers[p];return <Card key={p}>
@@ -32,6 +33,10 @@ export function AccountSyncSummary(){
   <Button secondary disabled={checking} title={checking?'IP 확인 중…':'현재 Wi-Fi IP 확인'} onPress={()=>void check()}/>
   <Label size={13}>최근 통합 갱신일: {status?.dailyWifiDay||'완료 기록 없음'}</Label>
   <Label size={13}>하루 통합 위젯: {status?.widgetPending?'갱신 대기 · 계좌 재조회 없이 재시도':status?.widgetSyncedAt?'반영 완료':'반영 기록 없음'}</Label>
+  {!!status?.widgetStage&&<Label size={13}>위젯 처리 단계: {status.widgetStage}</Label>}
+  {!!status?.widgetAttempt&&<Label size={13}>최근 위젯 시도: {koreanTime(status.widgetAttempt)}</Label>}
+  {!!status?.widgetError&&<Label size={13}>위젯 갱신 오류: {status.widgetError}</Label>}
+  {status?.widgetPending&&<><Button secondary disabled={checking} title={checking?'확인 중…':'위젯 갱신 다시 시도'} onPress={()=>void retry()}/><Label muted size={12}>등록 Wi-Fi에서 저장된 계좌 자료로 재시도합니다. 계좌를 다시 조회하지 않으며 연속 재시도는 1분 간격입니다.</Label></>}
   {!!status?.widgetSyncedAt&&<Label muted size={12}>최근 위젯 반영: {koreanTime(status.widgetSyncedAt)}</Label>}
   {!!error&&<Label size={13}>{error}</Label>}
  </Card>;

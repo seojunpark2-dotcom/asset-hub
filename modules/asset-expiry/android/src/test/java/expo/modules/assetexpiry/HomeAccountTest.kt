@@ -102,10 +102,48 @@ class HomeAccountTest {
     val load = { _: String -> loads++; JSONObject().put("ok", true).put("holdings", JSONArray().put(accountHolding())) }
     HomeAccountSync.refreshWidget(context, now, load) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { error("offline") }) }
     assertTrue(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    val failed = PortfolioWidgetStore.refreshState(context)
+    assertEquals("시세 조회 실패", failed.getString("widgetStage"))
+    assertTrue(failed.getString("widgetError").contains("360750:"))
+    assertEquals(now, failed.getLong("accountWidgetAttempt"))
+    assertFalse(HomeAccountSync.manualWidgetDue(failed, now + 59999))
+    assertTrue(HomeAccountSync.manualWidgetDue(failed, now + 60000))
     HomeAccountSync.refreshWidget(context, now + 1000, load) { error("must be throttled") }; assertEquals(1, loads)
     HomeAccountSync.refreshWidget(context, now + 900000, load) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { JSONObject().put("current_price", "200") }) }
     assertEquals(2, loads); assertFalse(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
     assertEquals("+100.00%", PortfolioWidgetStore.snapshot(context)!!.getString("totalPercent"))
+    assertEquals("", PortfolioWidgetStore.refreshState(context).getString("widgetError"))
+    assertEquals("반영 완료", PortfolioWidgetStore.refreshState(context).getString("widgetStage"))
+  }
+  @Test fun manualWidgetRetryUsesSavedHoldingsWithoutBrokerReadAndRetainsCompletedDayProtection() {
+    val context = RuntimeEnvironment.getApplication(); val user = "manual-widget"
+    PortfolioWidgetStore.setUser(context, user)
+    PortfolioWidgetStore.setRefreshInput(context, user, widgetInput().toString())
+    PortfolioWidgetStore.markAccountChanged(context, user)
+    val now = 200000000L; var loads = 0
+    val load = { _: String -> loads++; JSONObject().put("ok", true).put("holdings", JSONArray().put(accountHolding())) }
+    HomeAccountSync.refreshWidget(context, now, load) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { error("offline") }) }
+    HomeAccountSync.refreshWidget(context, now + 60000, load, force = true) { input -> WidgetRefreshEngine.refresh(input, fetchQuote = { JSONObject().put("current_price", "150") }) }
+    assertEquals(2, loads)
+    assertEquals("+50.00%", PortfolioWidgetStore.snapshot(context)!!.getString("totalPercent"))
+    assertFalse(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    HomeAccountSync.refreshWidget(context, now + 120000, load, force = true) { error("must not refresh a completed snapshot") }
+    assertEquals(2, loads)
+  }
+  @Test fun missingDeviceOrMissingWidgetInputExplainsWhyFirstWidgetHasNotCompleted() {
+    val context = RuntimeEnvironment.getApplication(); val user = "missing-widget"
+    PortfolioWidgetStore.setUser(context, user); PortfolioWidgetStore.markAccountChanged(context, user)
+    HomeAccountSync.refreshWidget(context, 200000000L, load = { error("must not load without input") })
+    assertEquals("설정 대기", PortfolioWidgetStore.refreshState(context).getString("widgetStage"))
+    PortfolioWidgetStore.setRefreshInput(context, user, widgetInput().toString())
+    HomeAccountSync.refreshWidget(context, 200000000L, load = { null })
+    assertEquals("기기 연결 확인 필요", PortfolioWidgetStore.refreshState(context).getString("widgetStage"))
+    assertTrue(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
+    assertNull(PortfolioWidgetStore.snapshot(context))
+    val old = PortfolioWidgetStore.refreshState(context)
+    PortfolioWidgetStore.markAccountChanged(context, user)
+    PortfolioWidgetStore.noteWidgetProgress(context, old, "old error", "stale")
+    assertEquals("", PortfolioWidgetStore.refreshState(context).getString("widgetError"))
   }
   @Test fun inFlightOldSnapshotCannotEraseAnewerAccountRefreshRequest() {
     val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "widget-test")

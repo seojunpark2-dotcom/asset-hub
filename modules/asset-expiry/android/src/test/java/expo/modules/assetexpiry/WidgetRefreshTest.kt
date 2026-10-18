@@ -67,6 +67,9 @@ class WidgetRefreshTest {
     assertEquals("—", failed.snapshot.getString("totalValue"))
     assertEquals("—", failed.snapshot.getString("totalProfit"))
     assertTrue(failed.snapshot.getBoolean("stale"))
+    assertTrue(failed.errors.any { it.startsWith("360750:") })
+    assertTrue(failed.errors.any { it.startsWith("USD/KRW 환율:") })
+    assertFalse(failed.errors.joinToString().contains("IllegalStateException"))
   }
   @Test fun accountChangeOrNewHoldingsRejectsInFlightBackgroundResult() {
     val context = RuntimeEnvironment.getApplication()

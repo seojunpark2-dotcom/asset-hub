@@ -546,5 +546,10 @@
       ],
       "deviceVerification": "not performed; actual phone installation/broker/Wi-Fi/background behavior requires physical phone verification"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "minor",
+    "version": "1.17.0",
+    "versionCode": 27
+  }
 }

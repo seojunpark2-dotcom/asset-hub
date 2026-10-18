@@ -14,7 +14,14 @@ import java.util.Locale
 import java.util.TimeZone
 
 object WidgetRefreshEngine {
-  data class Refresh(val snapshot: JSONObject, val quotes: JSONObject, val complete: Boolean)
+  data class Refresh(val snapshot: JSONObject, val quotes: JSONObject, val complete: Boolean, val errors: List<String> = emptyList())
+  private fun failure(e: Exception): String = when (e) {
+    is HttpError -> "HTTP ${e.status}"
+    is java.net.SocketTimeoutException -> "연결 시간 초과"
+    is java.net.UnknownHostException -> "서버 주소 확인 실패"
+    is java.io.IOException -> "네트워크 연결 실패"
+    else -> "시세 응답 검증 실패"
+  }
   private val math = MathContext(40, RoundingMode.HALF_UP)
   private class HttpError(val status: Int) : Exception()
   private fun request(url: String, network: Network? = null): String {
@@ -90,13 +97,14 @@ object WidgetRefreshEngine {
     val holdings = input.getJSONArray("holdings")
     val quotes = JSONObject(input.optJSONObject("quotes")?.toString() ?: "{}")
     var complete = true
+    val errors = mutableListOf<String>()
     val fetched = mutableSetOf<String>()
     for (i in 0 until holdings.length()) {
       check(!stopped())
       val h = holdings.getJSONObject(i); val key = key(h)
       if (!fetched.add(key)) continue
       try { quotes.put(key, fetchQuote(h)) }
-      catch (_: Exception) { complete = false; quotes.optJSONObject(key)?.put("stale", true) }
+      catch (e: Exception) { complete = false; errors.add("${h.optString("symbol").take(24)}: ${failure(e)}"); quotes.optJSONObject(key)?.put("stale", true) }
     }
     if ((0 until holdings.length()).any { holdings.getJSONObject(it).getString("purchase_currency") == "USD" }) {
       check(!stopped())
@@ -107,9 +115,9 @@ object WidgetRefreshEngine {
         require(Regex("\\d{4}-\\d{2}-\\d{2}").matches(dateText))
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false; timeZone = TimeZone.getTimeZone("UTC") }.parse(dateText)!!.time
         quotes.put("FX:USD/KRW", quote("USD/KRW", "FX", "KRW", fx.getString("rate"), timestamp(date), "Frankfurter · 일별 기준환율"))
-      } catch (_: Exception) { complete = false; quotes.optJSONObject("FX:USD/KRW")?.put("stale", true) }
+      } catch (e: Exception) { complete = false; errors.add("USD/KRW 환율: ${failure(e)}"); quotes.optJSONObject("FX:USD/KRW")?.put("stale", true) }
     }
-    return Refresh(snapshot(input, quotes), quotes, complete)
+    return Refresh(snapshot(input, quotes), quotes, complete, errors)
   }
   private fun key(h: JSONObject): String {
     val type = h.getString("asset_type")

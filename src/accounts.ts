@@ -1,8 +1,8 @@
 import {supabase} from './supabase';
 import {requireOptionalNativeModule} from 'expo';
 export interface AccountWifi {id:string;label:string;ssid:string;ip:string;}
-export interface HomeStatus {networks:AccountWifi[];observedIp:string;observedSsid:string;ipCheckedAt:number;dailyWifiDay:string;widgetPending:boolean;widgetSyncedAt:number;backgroundPermission:boolean;providers:Record<AccountProvider,{configured:boolean;lastDay:string;lastAttempt:number;lastFetched:number;lastKeyFetched:number;usedIp:string;lastSynced:string;error:string}>;}
-interface HomeBridge {importSupabaseAccount(userId:string,provider:string,jwt:string):Promise<void>;homeAccountStatus():Promise<string>;registerHomeWifi():Promise<string>;updateAccountWifi(id:string,label:string,ssid:string,ip:string):Promise<string>;removeAccountWifi(id:string):Promise<string>;checkHomeNetwork():Promise<string>;saveHomeAccount(provider:string,access:string,secret:string):Promise<void>;removeHomeAccount(provider:string):Promise<void>;syncHomeAccounts():Promise<string>;ensureHomeAccounts():Promise<void>;}
+export interface HomeStatus {networks:AccountWifi[];observedIp:string;observedSsid:string;ipCheckedAt:number;dailyWifiDay:string;widgetPending:boolean;widgetSyncedAt:number;widgetStage?:string;widgetError?:string;widgetAttempt?:number;backgroundPermission:boolean;providers:Record<AccountProvider,{configured:boolean;lastDay:string;lastAttempt:number;lastFetched:number;lastKeyFetched:number;usedIp:string;lastSynced:string;error:string}>;}
+interface HomeBridge {importSupabaseAccount(userId:string,provider:string,jwt:string):Promise<void>;homeAccountStatus():Promise<string>;registerHomeWifi():Promise<string>;updateAccountWifi(id:string,label:string,ssid:string,ip:string):Promise<string>;removeAccountWifi(id:string):Promise<string>;checkHomeNetwork():Promise<string>;saveHomeAccount(provider:string,access:string,secret:string):Promise<void>;removeHomeAccount(provider:string):Promise<void>;syncHomeAccounts():Promise<string>;retryHomeWidget():Promise<string>;ensureHomeAccounts():Promise<void>;}
 export const homeAccounts=requireOptionalNativeModule<HomeBridge>('AssetExpiry');
 export async function homeStatus():Promise<HomeStatus>{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');return JSON.parse(await homeAccounts.homeAccountStatus());}
 export type AccountProvider='kiwoom'|'upbit';
@@ -19,6 +19,6 @@ export async function accountRequest<T=Record<string,unknown>>(body:Record<strin
 }
 export async function syncAccounts(){
  const errors:Record<string,string>={};if(!homeAccounts)return {errors};
- try{const status:HomeStatus=JSON.parse(await homeAccounts.syncHomeAccounts());for(const p of ['kiwoom','upbit'] as const)if(status.providers?.[p]?.error)errors[p]=status.providers[p].error;}catch{/* Away from home, preserve holdings and continue public quote refresh. */}
+ try{const status:HomeStatus=JSON.parse(await homeAccounts.syncHomeAccounts());for(const p of ['kiwoom','upbit'] as const)if(status.providers?.[p]?.error)errors[p]=status.providers[p].error;}catch(e){errors.widget=e instanceof Error?e.message:'위젯 갱신 조건을 확인하지 못했습니다.';}
  return {errors};
 }

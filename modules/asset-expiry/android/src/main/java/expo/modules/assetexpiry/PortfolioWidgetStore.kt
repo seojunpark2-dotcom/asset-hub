@@ -68,6 +68,7 @@ object PortfolioWidgetStore {
     val data = read(context)
     if (userId.isEmpty() || data.optString("userId") != userId) return
     data.put("accountWidgetPending", true).put("accountRevision", java.util.UUID.randomUUID().toString()).put("accountWidgetAttempt", 0L)
+      .put("widgetStage", "계좌 자료 반영 대기").put("widgetError", "")
     write(context, data)
   }
   @Synchronized fun noteAccountWidgetAttempt(context: Context, state: JSONObject, now: Long) {
@@ -75,6 +76,12 @@ object PortfolioWidgetStore {
     if (data.optString("userId") == state.optString("userId") && data.optString("accountRevision") == state.optString("accountRevision")) {
       data.put("accountWidgetAttempt", now); write(context, data)
     }
+  }
+  @Synchronized fun noteWidgetProgress(context: Context, state: JSONObject, stage: String, error: String = "") {
+    val data = read(context)
+    if (data.optString("userId") != state.optString("userId") || data.optString("accountRevision") != state.optString("accountRevision")) return
+    if (!data.optBoolean("accountWidgetPending")) return
+    data.put("widgetStage", stage).put("widgetError", error.take(600)); write(context, data)
   }
   @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean, holdings: org.json.JSONArray? = null, accountSnapshot: Boolean = false): Boolean {
     val data = read(context)
@@ -90,7 +97,7 @@ object PortfolioWidgetStore {
     if (holdings != null) data.getJSONObject("input").put("holdings", holdings)
     data.put("lastSuccessDay", day).put("dailyWifiDay", day)
     if (complete && accountSnapshot && data.optBoolean("accountWidgetPending")) {
-      data.put("accountWidgetPending", false).put("accountWidgetSyncedAt", System.currentTimeMillis())
+      data.put("accountWidgetPending", false).put("accountWidgetSyncedAt", System.currentTimeMillis()).put("widgetStage", "반영 완료").put("widgetError", "")
     }
     write(context, data)
     PortfolioWidgetProvider.updateAll(context)

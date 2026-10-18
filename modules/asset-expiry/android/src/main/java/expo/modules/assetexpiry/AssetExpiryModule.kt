@@ -27,6 +27,7 @@ class AssetExpiryModule : Module() {
     AsyncFunction("importSupabaseAccount") { userId: String, provider: String, jwt: String -> WidgetAccountSync.importCredentials(requireNotNull(appContext.reactContext), userId, provider, jwt) }
     AsyncFunction("removeHomeAccount") { provider: String -> HomeAccountSync.remove(requireNotNull(appContext.reactContext), provider) }
     AsyncFunction("syncHomeAccounts") { HomeAccountSync.syncAndWidget(requireNotNull(appContext.reactContext)) }
+    AsyncFunction("retryHomeWidget") { HomeAccountSync.retryWidget(requireNotNull(appContext.reactContext)) }
     AsyncFunction("ensureHomeAccounts") { HomeAccountSync.ensure(requireNotNull(appContext.reactContext)) }
     AsyncFunction("pinWidget") { PortfolioWidgetProvider.pin(requireNotNull(appContext.reactContext)) }
     AsyncFunction("openNotificationSettings") {
