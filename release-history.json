@@ -493,11 +493,32 @@
         "Latest and tag source verified; main/api-key unchanged; Supabase portfolio-accounts v12 JWT verification enabled; owner binding configured; isolated live auth and snapshot tests passed, restricted per-provider credential scope migration applied"
       ],
       "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
+    },
+    {
+      "version": "1.15.0",
+      "changeType": "minor",
+      "versionCode": 25,
+      "description": "등록 Wi-Fi 하루 한 번 계좌·시세·위젯 통합 갱신 및 앱 시세 분리",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "e76062e7ee1838550f7dd8d8fa04e9e5beffab1b",
+      "tag": "v1.15.0",
+      "releasedAt": "2026-10-18",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.15.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.15.0.apk",
+      "sha256": "77e00223fbb5fb81c3a98c59bdb5fe8aa47608f2c2e2a0461c9f985e3c45c029",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.15.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.15.0/asset-hub-1.15.0.apk",
+      "checks": [
+        "TypeScript and 27 application/gateway/DB tests passed",
+        "Native Android 28/33 tests passed, including single daily snapshot commit, partial-account and partial-price withholding, foreground snapshot isolation, quote-only revision stability, legacy midnight cancellation, key/outbox/Wi-Fi/widget regressions",
+        "Downloaded APK identity, native importSupabaseAccount credentials route, Keystore encryption and Supabase settings UI verified",
+        "Original package and signing certificate matched; v2 APK signature verified",
+        "Downloaded APK matches GitHub digest and checksum; ZIP contains matching Korean filename",
+        "Latest and tag source verified; main/api-key unchanged; No Supabase schema/function changes; existing owner/device key access preserved; main/api-key unchanged"
+      ],
+      "deviceVerification": "not performed; actual broker keys/home Wi-Fi/background execution require physical phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.15.0",
-    "versionCode": 25
-  }
+  ]
 }
