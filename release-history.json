@@ -545,11 +545,32 @@
         "Latest and tag source verified; main/api-key unchanged"
       ],
       "deviceVerification": "not performed; actual phone installation/broker/Wi-Fi/background behavior requires physical phone verification"
+    },
+    {
+      "version": "1.17.0",
+      "changeType": "minor",
+      "versionCode": 27,
+      "description": "Android Yahoo 요청 식별자 수정, 위젯 실패 단계·종목·시각 표시와 계좌 재조회 없는 위젯 재시도",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "269fe0c014ae4d7708aa9ded885627b3ca032727",
+      "tag": "v1.17.0",
+      "releasedAt": "2026-10-18",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.17.0.apk",
+      "requestedApkName": "통합 자산관리 - 1.17.0.apk",
+      "sha256": "f96b6dc3f11cf16ce2b904e76fd44e09440ba57f3a8a88dec917615d55584112",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.17.0",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.17.0/asset-hub-1.17.0.apk",
+      "checks": [
+        "TypeScript and 28 application/finance/provider/account/DB tests passed",
+        "Native Android 28/33 tests passed including explicit app identity, error diagnostics/redaction, manual retry cooldown, saved-holdings retry, completed snapshot and stale-error protection",
+        "User-authorized public quote comparison reproduced Yahoo 429 with Dalvik; configured app identity returned 200 for all six required quote/FX requests; no account identifiers, balances or secrets transmitted",
+        "Downloaded APK identity 1.17.0/versionCode27, native app identity/retry/diagnostic markers, original package and signing certificate matched; APK v2 integrity verified",
+        "Remote APK digest, downloaded checksum and Korean-named ZIP APK SHA256 match",
+        "Latest and tag source verified; main/api-key unchanged; no Supabase function/schema/key/account writes"
+      ],
+      "deviceVerification": "not performed; original phone failure not conclusively diagnosed without device logs; update and retry on registered Wi-Fi, then inspect completion/error status"
     }
-  ],
-  "plannedRelease": {
-    "kind": "minor",
-    "version": "1.17.0",
-    "versionCode": 27
-  }
+  ]
 }
