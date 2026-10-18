@@ -572,5 +572,10 @@
       ],
       "deviceVerification": "not performed; original phone failure not conclusively diagnosed without device logs; update and retry on registered Wi-Fi, then inspect completion/error status"
     }
-  ]
+  ],
+  "plannedRelease": {
+    "kind": "patch",
+    "version": "1.17.1",
+    "versionCode": 28
+  }
 }

@@ -2,13 +2,13 @@
   "expo": {
     "name": "통합 자산관리",
     "slug": "asset-hub",
-    "version": "1.17.0",
+    "version": "1.17.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "assethub",
     "android": {
       "package": "com.portfolio.assettracker",
-      "versionCode": 27,
+      "versionCode": 28,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
@@ -20,7 +20,14 @@
         "android.permission.VIBRATE",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
-      ]
+      ],
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-foreground.png",
+        "backgroundImage": "./assets/icon-background.png",
+        "backgroundColor": "#101723",
+        "monochromeImage": "./assets/icon-monochrome.png"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.portfolio.assettracker",
@@ -41,6 +48,7 @@
         "projectId": "0d570c29-f0c8-4099-b46b-baf2155216a3"
       }
     },
-    "owner": "seojunpark2"
+    "owner": "seojunpark2",
+    "icon": "./assets/icon.png"
   }
 }
