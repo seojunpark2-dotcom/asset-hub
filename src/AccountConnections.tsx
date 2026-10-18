@@ -15,7 +15,7 @@ export function AccountSyncSummary(){
   return()=>{active=false;alive.current=false;clearInterval(timer);listener.remove();};
  },[load]);
  async function check(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.checkHomeNetwork()));}catch(e){setError(e instanceof Error?e.message:'IP 확인 실패');}finally{setChecking(false);}}
- async function retry(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.retryHomeWidget()));}catch(e){setError(e instanceof Error?e.message:'위젯 재시도 실패');await load();}finally{setChecking(false);}}
+ async function retry(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.retryHomeWidget()));}catch(e){await load();setError(e instanceof Error?e.message:'위젯 재시도 실패');}finally{setChecking(false);}}
  return <Card><Label bold size={20}>계좌 조회 현황</Label>
   <Label muted size={12}>한국 시간 · 등록 Wi-Fi에서 계좌·시세·위젯 하루 한 번 통합 갱신</Label>
   {(['kiwoom','upbit'] as const).map(p=>{const r=status?.providers[p];return <Card key={p}>
