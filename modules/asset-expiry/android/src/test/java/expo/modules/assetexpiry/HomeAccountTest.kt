@@ -18,6 +18,33 @@ import javax.crypto.spec.SecretKeySpec
 @Config(sdk = [28, 33])
 class HomeAccountTest {
   @Before fun initialize() { WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication()) }
+  @Test fun unifiedBatchWaitsForAllEnabledAccountsAndPublishesOnlyOncePerKoreanDay() {
+    val day = "2026-10-18"
+    val data = JSONObject().put("kiwoom", JSONObject().put("enabled", true).put("day", day).put("synced", "ok"))
+      .put("upbit", JSONObject().put("enabled", true).put("day", "2026-10-17").put("synced", "old"))
+    assertFalse(HomeAccountSync.accountsReady(data, day))
+    data.getJSONObject("upbit").put("day", day).put("pending", JSONArray())
+    assertFalse(HomeAccountSync.accountsReady(data, day))
+    data.getJSONObject("upbit").remove("pending")
+    assertTrue(HomeAccountSync.accountsReady(data, day))
+    val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "batch-owner")
+    PortfolioWidgetStore.setRefreshInput(context, "batch-owner", widgetInput().toString())
+    PortfolioWidgetStore.markAccountChanged(context, "batch-owner")
+    val state = PortfolioWidgetStore.refreshState(context)
+    val snapshot = JSONObject().put("rows", JSONArray()).put("totalValue", "₩300")
+    assertTrue(HomeAccountSync.batchDue(state, day))
+    assertFalse(PortfolioWidgetStore.commitRefresh(context, state, snapshot, JSONObject(), day, false, accountSnapshot = true))
+    assertNull(PortfolioWidgetStore.snapshot(context))
+    assertTrue(PortfolioWidgetStore.commitRefresh(context, state, snapshot, JSONObject(), day, true, accountSnapshot = true))
+    assertFalse(HomeAccountSync.batchDue(PortfolioWidgetStore.refreshState(context), day))
+    assertTrue(HomeAccountSync.batchDue(PortfolioWidgetStore.refreshState(context), "2026-10-19"))
+    assertFalse(PortfolioWidgetStore.commitRefresh(context, state, snapshot.put("totalValue", "₩999"), JSONObject(), day, true, accountSnapshot = true))
+    PortfolioWidgetStore.update(context, "batch-owner", snapshot.toString())
+    PortfolioWidgetStore.setRefreshInput(context, "batch-owner", widgetInput().put("quotes", JSONObject().put("price", 999)).toString())
+    assertEquals("₩300", PortfolioWidgetStore.snapshot(context)!!.getString("totalValue"))
+    assertEquals(state.getString("revision"), PortfolioWidgetStore.refreshState(context).getString("revision"))
+    assertEquals(day, PortfolioWidgetStore.refreshState(context).getString("dailyWifiDay"))
+  }
   @Test fun everyNewAccountReadUsesFreshServerKeysAndOutboxRetriesDoNotReadKeysOrBrokerAgain() {
     val r = JSONObject().put("access", "old-access").put("secret", "old-secret")
     var loads = 0; var reads = 0
@@ -60,13 +87,13 @@ class HomeAccountTest {
     var loads = 0
     val load = { _: String -> loads++; JSONObject().put("ok", true).put("holdings", JSONArray().put(accountHolding())) }
     val refresh = { input: JSONObject -> WidgetRefreshEngine.refresh(input, fetchQuote = { JSONObject().put("current_price", "150") }) }
-    HomeAccountSync.refreshWidget(context, now, load, refresh)
+    HomeAccountSync.refreshWidget(context, now, load, refresh = refresh)
     val snapshot = PortfolioWidgetStore.snapshot(context)!!
     assertEquals("₩300", snapshot.getString("totalValue")); assertEquals("+₩100", snapshot.getString("totalProfit")); assertEquals("+50.00%", snapshot.getString("totalPercent"))
     assertEquals("+50.00%", snapshot.getJSONArray("rows").getJSONObject(0).getString("percent"))
     assertFalse(PortfolioWidgetStore.refreshState(context).getBoolean("accountWidgetPending"))
     assertTrue(PortfolioWidgetStore.refreshState(context).getLong("accountWidgetSyncedAt") > 0)
-    HomeAccountSync.refreshWidget(context, now + 2000000, load, refresh); assertEquals(1, loads)
+    HomeAccountSync.refreshWidget(context, now + 2000000, load, refresh = refresh); assertEquals(1, loads)
   }
   @Test fun failedPriceRefreshRetainsPendingAndRetriesWithoutReadingBrokerAgain() {
     val context = RuntimeEnvironment.getApplication(); PortfolioWidgetStore.setUser(context, "widget-test")

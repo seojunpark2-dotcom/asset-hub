@@ -35,6 +35,7 @@ object HomeAccountSync {
   }
   @Synchronized fun clear(context: Context) { vault(context).clear(); WorkManager.getInstance(context).cancelUniqueWork(WORK) }
   @Synchronized fun ensure(context: Context) {
+    WidgetRefreshScheduler.cancel(context)
     val data = read(context)
     if (user(context).isEmpty() || AccountWifiRegistry.entries(data).length() == 0) {
       WorkManager.getInstance(context).cancelUniqueWork(WORK); return
@@ -125,7 +126,7 @@ object HomeAccountSync {
     val widget = PortfolioWidgetStore.refreshState(context)
     return JSONObject().put("networks", AccountWifiRegistry.entries(data)).put("providers", providers)
       .put("observedIp", data.optString("observedIp")).put("observedSsid", data.optString("observedSsid")).put("ipCheckedAt", data.optLong("ipCheckedAt"))
-      .put("widgetPending", widget.optBoolean("accountWidgetPending")).put("widgetSyncedAt", widget.optLong("accountWidgetSyncedAt"))
+      .put("dailyWifiDay", widget.optString("dailyWifiDay")).put("widgetPending", widget.optBoolean("accountWidgetPending")).put("widgetSyncedAt", widget.optLong("accountWidgetSyncedAt"))
       .put("backgroundPermission", Build.VERSION.SDK_INT < 29 || context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED).toString()
   }
   internal fun providerStatus(r: JSONObject): JSONObject = JSONObject()
@@ -147,17 +148,8 @@ object HomeAccountSync {
     record.put("pending", positions).put("day", day).put("fetchedAt", now)
   }
   fun due(record: JSONObject, day: String, now: Long): Boolean = record.optBoolean("enabled") && record.optString("day") != day && now - record.optLong("attempt", 0) >= 30 * 60 * 1000
-  @Synchronized fun sync(context: Context): String {
-    val owner = user(context); if (owner.isEmpty()) return "{}"
-    val data = read(context); val now = System.currentTimeMillis(); val day = WidgetRefreshScheduler.day(now)
+  private fun syncAccounts(context: Context, data: JSONObject, owner: String, network: Network, address: String, now: Long, day: String) {
     val targets = listOf("kiwoom", "upbit").filter { p -> val r = data.optJSONObject(p); r != null && r.optBoolean("enabled") && (r.has("pending") || due(r, day, now)) }
-    if (targets.isEmpty()) return status(context)
-    // Any registered SSID/IP pair shares the same provider ledger; switching networks cannot bypass it.
-    val (network, ssid) = wifi(context)
-    require(AccountWifiRegistry.hasSsid(data, ssid)) { "등록한 Wi-Fi에서만 계좌를 조회합니다." }
-    val address = ip(network)
-    data.put("observedIp", address).put("observedSsid", ssid).put("ipCheckedAt", System.currentTimeMillis()); vault(context).write(data)
-    require(AccountWifiRegistry.matches(data, ssid, address)) { "등록한 Wi-Fi의 공인 IP와 다릅니다. 기관 허용 IP와 Wi-Fi 등록 목록을 확인하세요." }
     for (provider in targets) {
       val r = data.getJSONObject(provider)
       try {
@@ -179,15 +171,38 @@ object HomeAccountSync {
       } catch (e: Exception) { r.put("error", e.message?.takeIf { !it.contains(r.optString("secret", "\u0000")) } ?: "계좌 동기화 실패") }
       require(user(context) == owner); vault(context).write(data)
     }
-    return status(context)
   }
-  fun syncAndWidget(context: Context): String {
-    try { sync(context) } finally { try { refreshWidget(context) } catch (_: Exception) { /* Durable pending flag retries without another broker fetch. */ } }
+  internal fun accountsReady(data: JSONObject, day: String): Boolean = listOf("kiwoom", "upbit").all { p ->
+    val r = data.optJSONObject(p)
+    r == null || !r.optBoolean("enabled") || (r.optString("day") == day && !r.has("pending") && r.optString("synced").isNotEmpty())
+  }
+  internal fun batchDue(state: JSONObject, day: String): Boolean = state.optString("dailyWifiDay") != day
+  @Synchronized fun syncAndWidget(context: Context): String {
+    val owner = user(context); if (owner.isEmpty()) return "{}"
+    val now = System.currentTimeMillis(); val day = WidgetRefreshScheduler.day(now)
+    if (!batchDue(PortfolioWidgetStore.refreshState(context), day)) return status(context)
+    val data = read(context)
+    // One registered Wi-Fi/IP gate covers account reads, pending uploads and widget prices.
+    val (network, ssid) = wifi(context)
+    require(AccountWifiRegistry.hasSsid(data, ssid)) { "등록한 Wi-Fi에서 하루 통합 갱신을 실행합니다." }
+    val address = ip(network)
+    data.put("observedIp", address).put("observedSsid", ssid).put("ipCheckedAt", now); vault(context).write(data)
+    require(AccountWifiRegistry.matches(data, ssid, address)) { "등록 Wi-Fi의 공인 IP와 다릅니다. 기관 허용 IP와 등록 목록을 확인하세요." }
+    syncAccounts(context, data, owner, network, address, now, day)
+    if (accountsReady(data, day)) {
+      val state = PortfolioWidgetStore.refreshState(context)
+      if (!state.optBoolean("accountWidgetPending")) PortfolioWidgetStore.markAccountChanged(context, owner)
+      try {
+        refreshWidget(context, now, refresh = { WidgetRefreshEngine.refreshOnWifi(it, network) },
+          beforeCommit = { require(wifi(context).first == network) { "Wi-Fi가 변경되어 다음 기회에 갱신합니다." } })
+      } catch (_: Exception) { /* Keep the prior daily snapshot; retry only on eligible Wi-Fi. */ }
+    }
     return status(context)
   }
   internal fun widgetDue(state: JSONObject, now: Long): Boolean = state.optBoolean("accountWidgetPending") && now - state.optLong("accountWidgetAttempt") >= 15 * 60 * 1000
   @Synchronized internal fun refreshWidget(context: Context, now: Long = System.currentTimeMillis(),
     load: (String) -> JSONObject? = { WidgetAccountSync.holdings(context, it, true) },
+    beforeCommit: () -> Unit = {},
     refresh: (JSONObject) -> WidgetRefreshEngine.Refresh = { WidgetRefreshEngine.refresh(it) }) {
     val state = PortfolioWidgetStore.refreshState(context); val owner = state.optString("userId")
     if (!widgetDue(state, now) || owner.isEmpty()) return
@@ -197,6 +212,7 @@ object HomeAccountSync {
     require(result.optBoolean("ok"))
     input.put("holdings", result.getJSONArray("holdings"))
     val quotes = refresh(input)
+    beforeCommit()
     PortfolioWidgetStore.commitRefresh(context, state, quotes.snapshot, quotes.quotes, WidgetRefreshScheduler.day(now), quotes.complete, input.getJSONArray("holdings"), true)
   }
 }

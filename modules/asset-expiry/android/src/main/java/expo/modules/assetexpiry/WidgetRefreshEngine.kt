@@ -2,6 +2,7 @@ package expo.modules.assetexpiry
 
 import org.json.JSONArray
 import org.json.JSONObject
+import android.net.Network
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -16,9 +17,11 @@ object WidgetRefreshEngine {
   data class Refresh(val snapshot: JSONObject, val quotes: JSONObject, val complete: Boolean)
   private val math = MathContext(40, RoundingMode.HALF_UP)
   private class HttpError(val status: Int) : Exception()
-  private fun request(url: String): String {
-    val connection = URI(url).toURL().openConnection() as HttpURLConnection
+  private fun request(url: String, network: Network? = null): String {
+    val target = URI(url).toURL()
+    val connection = (network?.openConnection(target) ?: target.openConnection()) as HttpURLConnection
     try {
+      connection.instanceFollowRedirects = false
       connection.connectTimeout = 12000; connection.readTimeout = 12000
       if (connection.responseCode != 200) throw HttpError(connection.responseCode)
       return connection.inputStream.bufferedReader().use { it.readText() }
@@ -47,11 +50,11 @@ object WidgetRefreshEngine {
     price(meta.getString("regularMarketPrice")); timestamp(meta.getLong("regularMarketTime") * 1000)
     return meta
   }
-  private fun fetch(h: JSONObject): JSONObject {
+  private fun fetch(h: JSONObject, get: (String) -> String = { request(it) }): JSONObject {
     val symbol = h.getString("symbol"); val type = h.getString("asset_type")
     if (type == "crypto") {
       require(Regex("KRW-[A-Z0-9]{2,15}").matches(symbol))
-      val rows = JSONArray(request("https://api.upbit.com/v1/ticker?markets=$symbol"))
+      val rows = JSONArray(get("https://api.upbit.com/v1/ticker?markets=$symbol"))
       val item = (0 until rows.length()).map { rows.getJSONObject(it) }.first { it.getString("market") == symbol }
       return quote(symbol, "UPBIT", "KRW", item.getString("trade_price"), timestamp(item.getLong("trade_timestamp")), "Upbit")
     }
@@ -62,7 +65,7 @@ object WidgetRefreshEngine {
     val suffixes = if (!domestic) listOf("") else if (etf) listOf(".KS") else listOf(".KS", ".KQ")
     for (suffix in suffixes) {
       val ticker = if (domestic) symbol + suffix else symbol.replace('.', '-')
-      val data = try { JSONObject(request("https://query1.finance.yahoo.com/v8/finance/chart/$ticker?interval=1d&range=5d")) }
+      val data = try { JSONObject(get("https://query1.finance.yahoo.com/v8/finance/chart/$ticker?interval=1d&range=5d")) }
       catch (e: HttpError) { if (domestic && !etf && suffix == ".KS" && e.status == 404) continue else throw e }
       val chart = data.getJSONObject("chart")
       if (domestic && !etf && suffix == ".KS" && chart.optJSONObject("error")?.optString("code") == "Not Found") continue
@@ -80,6 +83,9 @@ object WidgetRefreshEngine {
     }
     throw IllegalArgumentException("Unsupported Yahoo instrument")
   }
+  fun refreshOnWifi(input: JSONObject, network: Network): Refresh = refresh(input,
+    fetchQuote = { h -> fetch(h) { url -> request(url, network) } },
+    fetchFx = { JSONObject(request("https://api.frankfurter.dev/v2/rate/USD/KRW", network)) })
   fun refresh(input: JSONObject, stopped: () -> Boolean = { false }, fetchQuote: (JSONObject) -> JSONObject = { fetch(it) }, fetchFx: () -> JSONObject = { JSONObject(request("https://api.frankfurter.dev/v2/rate/USD/KRW")) }): Refresh {
     val holdings = input.getJSONArray("holdings")
     val quotes = JSONObject(input.optJSONObject("quotes")?.toString() ?: "{}")

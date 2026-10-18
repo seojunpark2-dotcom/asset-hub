@@ -18,17 +18,23 @@ class PortfolioWidgetTest {
     androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(RuntimeEnvironment.getApplication())
   }
   private val payload = """{"totalValue":"₩350","totalProfit":"+₩50","totalPercent":"+16.67%","totalColor":"#FF727C","updatedAt":"2026-10-11T00:00:00.000Z","rows":[{"name":"ETF A","institution":"키움증권","percent":"+50.00%","color":"#FF727C"}]}"""
+  private fun publish(context: android.content.Context, user: String) {
+    if (PortfolioWidgetStore.refreshState(context).optString("userId") != user) return
+    PortfolioWidgetStore.setRefreshInput(context, user, """{"colors":"kr","holdings":[],"quotes":{}}""")
+    PortfolioWidgetStore.markAccountChanged(context, user)
+    PortfolioWidgetStore.commitRefresh(context, PortfolioWidgetStore.refreshState(context), org.json.JSONObject(payload), org.json.JSONObject(), "2026-10-18", true, accountSnapshot = true)
+  }
   @Test fun logoutAndAccountSwitchClearSnapshotAndRejectLateWrites() {
     val context = RuntimeEnvironment.getApplication()
     PortfolioWidgetStore.setUser(context, "")
     PortfolioWidgetStore.setUser(context, "A")
-    PortfolioWidgetStore.update(context, "A", payload)
+    publish(context, "A")
     assertEquals("₩350", PortfolioWidgetStore.snapshot(context)!!.getString("totalValue"))
     PortfolioWidgetStore.setUser(context, "B")
     assertNull(PortfolioWidgetStore.snapshot(context))
-    PortfolioWidgetStore.update(context, "A", payload)
+    publish(context, "A")
     assertNull(PortfolioWidgetStore.snapshot(context))
-    PortfolioWidgetStore.update(context, "B", payload)
+    publish(context, "B")
     PortfolioWidgetStore.setUser(context, "")
     assertNull(PortfolioWidgetStore.snapshot(context))
   }
@@ -36,7 +42,7 @@ class PortfolioWidgetTest {
     val context = RuntimeEnvironment.getApplication()
     PortfolioWidgetStore.setUser(context, "")
     PortfolioWidgetStore.setUser(context, "A")
-    PortfolioWidgetStore.update(context, "A", payload)
+    publish(context, "A")
     val view = PortfolioWidgetProvider.views(context, 41).apply(context, null)
     assertEquals("₩350", view.findViewById<TextView>(R.id.widget_total).text.toString())
     val profit = view.findViewById<TextView>(R.id.widget_profit)

@@ -14,13 +14,13 @@ import android.widget.RemoteViews
 import org.json.JSONObject
 
 class PortfolioWidgetProvider : AppWidgetProvider() {
-  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) { ids.forEach { updateOne(context, manager, it) }; WidgetRefreshScheduler.ensure(context) }
-  override fun onEnabled(context: Context) { WidgetRefreshScheduler.ensure(context) }
+  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) { ids.forEach { updateOne(context, manager, it) }; HomeAccountSync.ensure(context) }
+  override fun onEnabled(context: Context) { HomeAccountSync.ensure(context) }
   override fun onDisabled(context: Context) { WidgetRefreshScheduler.cancel(context) }
   override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) { updateOne(context, manager, id) }
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) { updateAll(context); WidgetRefreshScheduler.ensure(context) }
+    if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) { updateAll(context); HomeAccountSync.ensure(context) }
   }
   companion object {
     fun pin(context: Context): Boolean {
@@ -49,7 +49,7 @@ class PortfolioWidgetProvider : AppWidgetProvider() {
       view.setTextViewText(R.id.widget_percent, snapshot?.optString("totalPercent", "—") ?: "—")
       view.setTextColor(R.id.widget_profit, color(snapshot?.optString("totalColor") ?: ""))
       view.setTextColor(R.id.widget_percent, color(snapshot?.optString("totalColor") ?: ""))
-      view.setTextViewText(R.id.widget_empty, if (snapshot == null) "앱에서 로그인 후 자산을 조회해주세요" else "자산 탭에서 보유자산을 추가해주세요")
+      view.setTextViewText(R.id.widget_empty, if (snapshot == null) "앱에서 설정 후 등록 Wi-Fi의 하루 갱신을 기다려주세요" else "자산 탭에서 보유자산을 추가해주세요")
       view.setEmptyView(R.id.widget_list, R.id.widget_empty)
       if (Build.VERSION.SDK_INT >= 31 && (rows?.length() ?: 0) <= 100) {
         val items = RemoteViews.RemoteCollectionItems.Builder().setViewTypeCount(1)

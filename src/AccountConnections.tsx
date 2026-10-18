@@ -16,7 +16,7 @@ export function AccountSyncSummary(){
  },[load]);
  async function check(){setChecking(true);setError('');try{if(!homeAccounts)throw Error('최신 Android APK를 설치하세요.');setStatus(JSON.parse(await homeAccounts.checkHomeNetwork()));}catch(e){setError(e instanceof Error?e.message:'IP 확인 실패');}finally{setChecking(false);}}
  return <Card><Label bold size={20}>계좌 조회 현황</Label>
-  <Label muted size={12}>한국 시간 · 등록된 Wi-Fi 전체에서 기관별 하루 한 번</Label>
+  <Label muted size={12}>한국 시간 · 등록 Wi-Fi에서 계좌·시세·위젯 하루 한 번 통합 갱신</Label>
   {(['kiwoom','upbit'] as const).map(p=>{const r=status?.providers[p];return <Card key={p}>
    <Label bold>{p==='kiwoom'?'키움증권':'업비트'}{r?.configured?'':' · 자동 조회 미설정'}</Label>
    <Label size={13}>최근 계좌 조회 실행: {koreanTime(r?.lastAttempt??0)}</Label>
@@ -30,7 +30,8 @@ export function AccountSyncSummary(){
   {!!status?.observedIp&&<Label muted size={12}>{status.observedSsid} · {koreanTime(status.ipCheckedAt)} 확인</Label>}
   {!!status?.networks?.length&&!!status.observedIp&&<Label size={13}>{status.networks.some(w=>w.ssid===status.observedSsid&&w.ip===status.observedIp)?'최근 확인 Wi-Fi와 IP가 등록 목록에 일치합니다.':'최근 확인 Wi-Fi·IP가 등록 목록에 없습니다. 등록 목록과 기관 허용 IP를 확인하세요.'}</Label>}
   <Button secondary disabled={checking} title={checking?'IP 확인 중…':'현재 Wi-Fi IP 확인'} onPress={()=>void check()}/>
-  <Label size={13}>계좌 동기화 후 위젯: {status?.widgetPending?'갱신 대기 · 계좌 재조회 없이 재시도':status?.widgetSyncedAt?'반영 완료':'반영 기록 없음'}</Label>
+  <Label size={13}>최근 통합 갱신일: {status?.dailyWifiDay||'완료 기록 없음'}</Label>
+  <Label size={13}>하루 통합 위젯: {status?.widgetPending?'갱신 대기 · 계좌 재조회 없이 재시도':status?.widgetSyncedAt?'반영 완료':'반영 기록 없음'}</Label>
   {!!status?.widgetSyncedAt&&<Label muted size={12}>최근 위젯 반영: {koreanTime(status.widgetSyncedAt)}</Label>}
   {!!error&&<Label size={13}>{error}</Label>}
  </Card>;
@@ -88,6 +89,6 @@ export function AccountConnections({onSynced}:{onSynced:()=>Promise<void>}){
   {!!cloudError&&<Label size={13}>{cloudError}</Label>}
   <Button secondary disabled={busy} title="Supabase 키 등록 상태 확인" onPress={()=>void run(load,'서버 키 등록 상태를 확인했습니다.')}/>
   <Button secondary disabled={busy} title="오늘 동기화 상태 확인" onPress={()=>void run(async()=>{await homeAccounts?.syncHomeAccounts();await onSynced();},'오늘 상태를 확인했습니다. 이미 조회한 기관은 다시 조회하지 않습니다.')}/>
-  <Label muted size={12}>Android가 약 15분 간격의 작업 기회에 등록 Wi-Fi 여부를 확인하며 절전 상태에서는 지연됩니다. 조회 실패는 30분 이상 뒤 재시도합니다. 등록된 곳에 연결되지 않은 날은 건너뛰고 과거 날짜를 몰아서 조회하지 않습니다. Wi-Fi 추가·수정·삭제로 하루 한 번 제한이 초기화되지 않습니다. 시세 갱신 주기는 별도로 유지됩니다. 미래에셋·예수금·신용·해외주식 계좌 연동은 지원하지 않습니다.</Label>
+  <Label muted size={12}>Android가 약 15분 간격의 작업 기회에 등록 Wi-Fi 여부를 확인하며 절전 상태에서는 지연됩니다. 조회 실패는 30분 이상 뒤 재시도합니다. 등록된 곳에 연결되지 않은 날은 건너뛰고 과거 날짜를 몰아서 조회하지 않습니다. Wi-Fi 추가·수정·삭제로 하루 한 번 제한이 초기화되지 않습니다. 계좌·위젯 시세·수익률을 한 작업으로 하루 한 번 갱신합니다. 별도 자정 위젯 작업은 없으며 앱 화면의 1·5·15분 시세 갱신은 위젯을 변경하지 않습니다. 미래에셋·예수금·신용·해외주식 계좌 연동은 지원하지 않습니다.</Label>
  </Card>;
 }

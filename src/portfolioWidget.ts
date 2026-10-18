@@ -1,5 +1,4 @@
 import {requireOptionalNativeModule} from 'expo';
-import {widgetSnapshot} from './widgetData';
 import type {Holding,Quote} from './types';
 import {accountRequest,homeAccounts,homeStatus} from './accounts';
 import {supabase} from './supabase';
@@ -11,7 +10,6 @@ let registeredUser:string|null=null;
 let registeredDevice:string|null=null;
 function serial<T>(task:()=>Promise<T>):Promise<T>{const result=queue.then(task,task);queue=result.catch(()=>{});return result;}
 export function setWidgetUser(userId:string|null){if(currentUser!==userId){registeredUser=null;registeredDevice=null;}currentUser=userId;return serial(async()=>{await native?.setWidgetUser(userId??'');});}
-export function syncPortfolioWidget(userId:string,snapshot:ReturnType<typeof widgetSnapshot>){return serial(async()=>{if(currentUser===userId)await native?.updateWidget(userId,JSON.stringify(snapshot));});}
 export function syncWidgetRefreshInput(userId:string,holdings:Holding[],quotes:Record<string,Quote>,colors:'kr'|'global'){
  const input=holdings.map(({id,name,asset_type,symbol,quantity,purchase_currency,original_investment_krw})=>({id,name,asset_type,symbol,quantity,purchase_currency,original_investment_krw}));
  return serial(async()=>{if(currentUser===userId)await native?.setWidgetRefreshInput(userId,JSON.stringify({holdings:input,quotes,colors}));});

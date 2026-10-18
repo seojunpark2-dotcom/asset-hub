@@ -26,11 +26,7 @@ object PortfolioWidgetStore {
   } }
   @Synchronized fun update(context: Context, userId: String, json: String) {
     if (userId.isEmpty() || read(context).optString("userId") != userId) return
-    val snapshot = JSONObject(json)
-    require(snapshot.optJSONArray("rows") != null)
-    val data = read(context)
-    data.put("snapshot", snapshot)
-    write(context, data)
+    // Compatibility bridge: foreground prices must not replace the daily Wi-Fi snapshot.
     PortfolioWidgetProvider.updateAll(context)
   }
   @Synchronized fun snapshot(context: Context): JSONObject? {
@@ -42,7 +38,11 @@ object PortfolioWidgetStore {
     if (userId.isEmpty() || data.optString("userId") != userId) return
     val input = JSONObject(json)
     require(input.getJSONArray("holdings").length() <= 100)
-    data.put("input", input).put("revision", java.util.UUID.randomUUID().toString())
+    val previous = data.optJSONObject("input")
+    if (previous?.optJSONArray("holdings")?.toString() != input.getJSONArray("holdings").toString() || previous?.optString("colors") != input.optString("colors")) {
+      data.put("revision", java.util.UUID.randomUUID().toString())
+    }
+    data.put("input", input)
     write(context, data)
     WidgetRefreshScheduler.ensure(context)
   }
@@ -61,6 +61,7 @@ object PortfolioWidgetStore {
   }
   @Synchronized fun commitRefresh(context: Context, state: JSONObject, snapshot: JSONObject, quotes: JSONObject, day: String, complete: Boolean, holdings: org.json.JSONArray? = null, accountSnapshot: Boolean = false): Boolean {
     val data = read(context)
+    if (!accountSnapshot || !complete || data.optString("dailyWifiDay") == day) return false
     if (state.optString("userId").isEmpty() || data.optString("userId") != state.optString("userId") || data.optString("revision") != state.optString("revision")) return false
     if (data.optString("accountRevision") != state.optString("accountRevision")) return false
     // A late failed price request must not overwrite a concurrently completed account widget update.
@@ -68,7 +69,7 @@ object PortfolioWidgetStore {
     data.put("snapshot", snapshot)
     data.getJSONObject("input").put("quotes", quotes)
     if (holdings != null) data.getJSONObject("input").put("holdings", holdings)
-    if (complete) data.put("lastSuccessDay", day)
+    data.put("lastSuccessDay", day).put("dailyWifiDay", day)
     if (complete && accountSnapshot && data.optBoolean("accountWidgetPending")) {
       data.put("accountWidgetPending", false).put("accountWidgetSyncedAt", System.currentTimeMillis())
     }
