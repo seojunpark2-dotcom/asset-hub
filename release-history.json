@@ -571,11 +571,33 @@
         "Latest and tag source verified; main/api-key unchanged; no Supabase function/schema/key/account writes"
       ],
       "deviceVerification": "not performed; original phone failure not conclusively diagnosed without device logs; update and retry on registered Wi-Fi, then inspect completion/error status"
+    },
+    {
+      "version": "1.17.1",
+      "changeType": "patch",
+      "versionCode": 28,
+      "description": "앱 화면 색상의 도넛·성장 막대 아이콘, 적응형 및 Android 테마 단색 아이콘 적용",
+      "appName": "통합 자산관리",
+      "applicationId": "com.portfolio.assettracker",
+      "commit": "6784701466ceb93204c59142a30051087520b15a",
+      "tag": "v1.17.1",
+      "releasedAt": "2026-10-18",
+      "status": "verified_with_filename_limitation",
+      "apkName": "asset-hub-1.17.1.apk",
+      "requestedApkName": "통합 자산관리 - 1.17.1.apk",
+      "sha256": "d31615dd83572c57a46cad36d772aa58e48f9e2c41c0806318f81b8796f18b72",
+      "releaseUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/tag/v1.17.1",
+      "apkUrl": "https://github.com/seojunpark2-dotcom/asset-hub/releases/download/v1.17.1/asset-hub-1.17.1.apk",
+      "checks": [
+        "TypeScript, version consistency, 28 application tests and Android 28/33 native regression tests passed",
+        "1024px icon layers, circular/rounded-square previews and Android adaptive 66dp safe-circle bounds verified",
+        "Local Expo prebuild created five-density legacy/round/foreground/background/monochrome resources",
+        "Downloaded APK icon extracted and visually checked; legacy icon is byte-identical to local generated asset; compiled adaptive XML links all three expected layers",
+        "Downloaded APK identity 1.17.1/versionCode28, original package and signing certificate matched; APK v2 integrity verified",
+        "Remote APK digest, downloaded checksum and Korean-named ZIP APK SHA256 match",
+        "Latest and tag source verified; main/api-key unchanged"
+      ],
+      "deviceVerification": "not performed; physical launcher/themed icon rendering requires phone verification"
     }
-  ],
-  "plannedRelease": {
-    "kind": "patch",
-    "version": "1.17.1",
-    "versionCode": 28
-  }
+  ]
 }

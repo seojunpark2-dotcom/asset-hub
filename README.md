@@ -1,5 +1,7 @@
 # 통합 자산관리 · Asset Hub
 
+<img src="assets/preview-rounded.png" width="96" alt="통합 자산관리 아이콘" />
+
 Android 기본 Dalvik 요청에서 Yahoo HTTP 429가 반환되는 현상을 재현해, 위젯 시세 요청에 앱 이름을 명시한 User-Agent와 JSON Accept를 설정했습니다. 같은 공개 조회 비교에서 앱 식별자 요청은 정상 응답했습니다. 실제 휴대폰에서의 반영은 업데이트 후 확인이 필요합니다.
 
 국내 주식·ETF, 미국주식, 비트코인을 원화로 합산하는 Android 앱입니다. 자산을 수동 등록하거나 지원 계좌에서 자동으로 가져옵니다.
