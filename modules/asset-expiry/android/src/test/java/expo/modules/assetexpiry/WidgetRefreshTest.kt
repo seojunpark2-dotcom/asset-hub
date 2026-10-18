@@ -35,7 +35,7 @@ class WidgetRefreshTest {
       .setInitialDelay(1, java.util.concurrent.TimeUnit.DAYS).addTag(WidgetRefreshScheduler.TAG).build()
     manager.enqueue(legacy).result.get()
     WidgetRefreshScheduler.ensure(context)
-    assertEquals(WorkInfo.State.CANCELLED, manager.getWorkInfoById(legacy.id).get().state)
+    assertEquals(WorkInfo.State.CANCELLED, requireNotNull(manager.getWorkInfoById(legacy.id).get()).state)
     WidgetRefreshScheduler.ensure(context)
     assertTrue(manager.getWorkInfosByTag(WidgetRefreshScheduler.TAG).get().all { it.state == WorkInfo.State.CANCELLED })
   }
