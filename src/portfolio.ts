@@ -3,6 +3,7 @@ import { Holding, Quote, Settings, quoteKey } from './types';
 import { secureStorage } from './storage';
 import { positive } from './finance';
 import {yahooQuotes} from './yahooQuotes';
+import {keepAccountHolding} from './accountDust';
 const db = () => { if (!supabase) throw new Error('Supabase 연결 설정이 필요합니다.'); return supabase; };
 export function normalizeHolding(row: Record<string, unknown>): Holding {
   const h = { ...row };
@@ -14,13 +15,16 @@ export function normalizeHolding(row: Record<string, unknown>): Holding {
 export async function loadHoldings(userId: string) {
   const { data, error } = await db().from('portfolio_holdings_read').select('*').eq('user_id', userId).order('created_at');
   if (error) throw error;
-  const holdings = (data ?? []).map(normalizeHolding);
+  const holdings = (data ?? []).map(normalizeHolding).filter(keepAccountHolding);
   await secureStorage.setItem('portfolio-' + userId, JSON.stringify(holdings));
   return holdings;
 }
 export async function cachedHoldings(userId: string): Promise<Holding[]> {
   const cached = await secureStorage.getItem('portfolio-' + userId);
-  return cached ? JSON.parse(cached) : [];
+  const holdings:Holding[] = cached ? JSON.parse(cached) : [];
+  const kept=holdings.filter(keepAccountHolding);
+  if(kept.length!==holdings.length)await secureStorage.setItem('portfolio-' + userId,JSON.stringify(kept));
+  return kept;
 }
 export async function saveHolding(h: Omit<Holding, 'id'> & { id?: string }) {
   if(h.connection_id)throw Error('자동 연동 자산은 계좌 동기화로 변경됩니다.');

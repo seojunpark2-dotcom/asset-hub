@@ -143,13 +143,37 @@ class HomeAccountTest {
     r.put("unit_currency", "USDT")
     assertThrows(IllegalArgumentException::class.java) { BrokerSnapshot.upbit(JSONArray().put(r)) }
     r.put("unit_currency", "KRW").put("avg_buy_price", "0")
-    assertEquals("0", BrokerSnapshot.upbit(JSONArray().put(r)).getJSONObject(0).getString("original_investment_krw"))
+    assertEquals(0, BrokerSnapshot.upbit(JSONArray().put(r)).length())
+    r.put("balance", "1").put("locked", "0").put("avg_buy_price", "0.999999999999")
+    assertEquals(0, BrokerSnapshot.upbit(JSONArray().put(r)).length())
+    r.put("avg_buy_price", "1")
+    assertEquals("1", BrokerSnapshot.upbit(JSONArray().put(r)).getJSONObject(0).getString("original_investment_krw"))
   }
   @Test fun domesticSnapshotMergesLotsAndRejectsCreditWithoutDeletingPreviousData() {
     fun row(q: String, cost: String) = JSONObject().put("stk_cd", "A360750").put("stk_nm", "ETF").put("rmnd_qty", q).put("pur_amt", cost).put("crd_tp", "00")
     val p = BrokerSnapshot.kiwoom(JSONArray().put(row("2", "40000")).put(row("1", "30000")), setOf("360750")).getJSONObject(0)
     assertEquals("3", p.getString("quantity")); assertEquals("70000", p.getString("original_investment_krw")); assertEquals("domestic_etf", p.getString("asset_type"))
     assertThrows(IllegalArgumentException::class.java) { BrokerSnapshot.kiwoom(JSONArray().put(row("1", "1").put("crd_tp", "03")), emptySet()) }
+    assertEquals(0, BrokerSnapshot.kiwoom(JSONArray().put(row("1", "0.999999999999")), emptySet()).length())
+    assertEquals("1", BrokerSnapshot.kiwoom(JSONArray().put(row("1", "0.6")).put(row("1", "0.4")), emptySet()).getJSONObject(0).getString("original_investment_krw"))
+  }
+  @Test fun deletedAssetsAreRemovedFromPublishedWidgetWithoutAnotherDailyFetch() {
+    val context = RuntimeEnvironment.getApplication(); val user = "dust-widget"
+    PortfolioWidgetStore.setUser(context, user)
+    val holdings = JSONArray().put(accountHolding()).put(JSONObject(accountHolding().toString()).put("id", "dust").put("quantity", "0.001").put("original_investment_krw", "0"))
+    val input = widgetInput().put("holdings", holdings)
+    PortfolioWidgetStore.setRefreshInput(context, user, input.toString())
+    val quotes = JSONObject().put("KR:360750", JSONObject().put("current_price", "150"))
+    val day = "2026-10-18"
+    assertTrue(PortfolioWidgetStore.commitRefresh(context, PortfolioWidgetStore.refreshState(context), WidgetRefreshEngine.snapshot(input, quotes), quotes, day, true, holdings, true))
+    val next = widgetInput().put("holdings", JSONArray().put(accountHolding())).put("quotes", JSONObject().put("KR:360750", JSONObject().put("current_price", "999")))
+    PortfolioWidgetStore.setRefreshInput(context, user, next.toString())
+    val snapshot = PortfolioWidgetStore.snapshot(context)!!
+    assertEquals(1, snapshot.getJSONArray("rows").length())
+    assertEquals("ETF", snapshot.getJSONArray("rows").getJSONObject(0).getString("id"))
+    assertEquals("₩300", snapshot.getString("totalValue")); assertEquals("+₩100", snapshot.getString("totalProfit"))
+    assertEquals("+50.00%", snapshot.getString("totalPercent"))
+    assertEquals(day, PortfolioWidgetStore.refreshState(context).getString("dailyWifiDay"))
   }
   @Test fun deviceJwtIsHS512WithUniqueNonceAndLiteralSecret() {
     val jwt = BrokerSnapshot.jwt("access", "secret"); val pieces = jwt.split('.')

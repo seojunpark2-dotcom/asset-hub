@@ -39,11 +39,28 @@ object PortfolioWidgetStore {
     val input = JSONObject(json)
     require(input.getJSONArray("holdings").length() <= 100)
     val previous = data.optJSONObject("input")
+    // Deletion is applied immediately, without a second daily account/price fetch.
+    // Use the last published quantities and prices, not foreground quote changes.
+    val oldRows = data.optJSONObject("snapshot")?.optJSONArray("rows")
+    val ids = (0 until input.getJSONArray("holdings").length()).map { input.getJSONArray("holdings").getJSONObject(it).getString("id") }.toSet()
+    if (oldRows != null && (0 until oldRows.length()).any { oldRows.getJSONObject(it).getString("id") !in ids }) {
+      val oldHoldings = data.optJSONArray("snapshotHoldings") ?: previous?.optJSONArray("holdings")
+      val oldIds = (0 until oldRows.length()).map { oldRows.getJSONObject(it).getString("id") }.toSet()
+      val kept = org.json.JSONArray()
+      if (oldHoldings != null) for (i in 0 until oldHoldings.length()) {
+        val h = oldHoldings.getJSONObject(i)
+        if (h.getString("id") in ids && h.getString("id") in oldIds) kept.put(h)
+      }
+      val oldQuotes = data.optJSONObject("snapshotQuotes") ?: previous?.optJSONObject("quotes") ?: JSONObject()
+      val oldInput = JSONObject().put("holdings", kept).put("colors", previous?.optString("colors", "kr") ?: "kr")
+      data.put("snapshot", WidgetRefreshEngine.snapshot(oldInput, oldQuotes)).put("snapshotHoldings", kept).put("snapshotQuotes", oldQuotes)
+    }
     if (previous?.optJSONArray("holdings")?.toString() != input.getJSONArray("holdings").toString() || previous?.optString("colors") != input.optString("colors")) {
       data.put("revision", java.util.UUID.randomUUID().toString())
     }
     data.put("input", input)
     write(context, data)
+    PortfolioWidgetProvider.updateAll(context)
     WidgetRefreshScheduler.ensure(context)
   }
   @Synchronized fun refreshState(context: Context): JSONObject = read(context)
@@ -67,6 +84,8 @@ object PortfolioWidgetStore {
     // A late failed price request must not overwrite a concurrently completed account widget update.
     if (accountSnapshot && !complete && data.optLong("accountWidgetSyncedAt") != state.optLong("accountWidgetSyncedAt")) return false
     data.put("snapshot", snapshot)
+    data.put("snapshotHoldings", holdings ?: data.getJSONObject("input").getJSONArray("holdings"))
+    data.put("snapshotQuotes", quotes)
     data.getJSONObject("input").put("quotes", quotes)
     if (holdings != null) data.getJSONObject("input").put("holdings", holdings)
     data.put("lastSuccessDay", day).put("dailyWifiDay", day)

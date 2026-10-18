@@ -7,18 +7,30 @@ import {normalizeKiwoom,normalizeUpbit,upbitJWT,AccountAdapters} from '../server
 import {gateway} from '../server/gateway';
 import {valueHolding} from '../src/finance';
 import type {Holding,Quote} from '../src/types';
+import {keepAccountHolding} from '../src/accountDust';
 
-test('Upbit includes locked coins, exact fractional cost, and zero-cost assets without fake returns',()=>{
+test('Upbit includes locked coins and removes account assets costing less than one won',()=>{
  const rows=normalizeUpbit([{currency:'KRW',balance:'10000',locked:'0'},
   {currency:'BTC',balance:'0.00001',locked:'0.00002',avg_buy_price:'100000000',unit_currency:'KRW'},
   {currency:'ETH',balance:'1',locked:'0',avg_buy_price:'0',unit_currency:'KRW'}]);
  assert.equal(rows[0]?.quantity,'0.00003');assert.equal(rows[0]?.original_investment_krw,'3000');
- assert.equal(rows[1]?.original_investment_krw,'0');
- const h={...rows[1],id:'gift',user_id:'user',institution:'업비트',purchase_exchange_rate:null} as Holding;
+ assert.equal(rows.length,1);
+ const h={...rows[0],id:'gift',user_id:'user',institution:'업비트',symbol:'KRW-ETH',quantity:'1',average_purchase_price:'0',original_investment_krw:'0',purchase_exchange_rate:null} as Holding;
  const q={current_price:'100',market:'UPBIT',symbol:'KRW-ETH'} as Quote;
  const valuation=valueHolding(h,{'UPBIT:KRW-ETH':q});assert.equal(valuation.percent,null);assert.equal(valuation.stockProfit?.toFixed(),'100');
  assert.throws(()=>normalizeUpbit([{currency:'BTC',balance:'1',locked:'0',avg_buy_price:'1',unit_currency:'USDT'}]));
  assert.throws(()=>normalizeUpbit([{currency:'BTC',balance:'-1',locked:'0',avg_buy_price:'1',unit_currency:'KRW'}]));
+});
+test('Account cost threshold is exact, merges lots first, and preserves manual holdings',()=>{
+ const coin=(currency:string,cost:string)=>({currency,balance:'1',locked:'0',avg_buy_price:cost,unit_currency:'KRW'});
+ assert.deepEqual(normalizeUpbit([coin('AAA','0.999999999999'),coin('BBB','1'),coin('CCC','1.000000000001'),coin('DDD','0')]).map(p=>p.symbol),['KRW-BBB','KRW-CCC']);
+ const lot=(code:string,cost:string)=>({stk_cd:code,stk_nm:'ETF',rmnd_qty:'1',pur_amt:cost});
+ assert.deepEqual(normalizeKiwoom([lot('A360750','0.6'),lot('A360750','0.4'),lot('A005930','0.999999999999')],new Set()).map(p=>p.original_investment_krw),['1']);
+ for(const cost of ['0','0.999999999999','1','1.000000000001']){
+  const h={connection_id:'connected',original_investment_krw:cost} as Holding;
+  assert.equal(keepAccountHolding(h),Number(cost)>=1);
+  assert.equal(keepAccountHolding({...h,connection_id:null}),true);
+ }
 });
 test('Kiwoom strips stock prefix, classifies ETFs from official list and combines duplicate cash lots',()=>{
  const rows=normalizeKiwoom([{stk_cd:'A360750',stk_nm:'ETF',rmnd_qty:'2',pur_amt:'40000',crd_tp:'00'},
@@ -90,6 +102,21 @@ test('Account snapshots are atomic, owner-isolated, read-only to app users and s
   const positions=normalizeKiwoom([{stk_cd:'A360750',stk_nm:'ETF',rmnd_qty:'2',pur_amt:'40000'}],new Set(['360750']));
   await db.query('select portfolio_commit_account($1,$2,$3,true)',[a,'kiwoom',JSON.stringify(positions)]);
   assert.equal((await db.query('select quantity from portfolio_holdings')).rows.length,1);
+  // Seed legacy account dust plus a manual position, then run the actual cleanup migration.
+  await db.exec(`insert into portfolio_holdings(user_id,connection_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
+   select '${a}',id,'키움증권','domestic_stock','005930','dust',1,0,'KRW',0 from portfolio_connections where user_id='${a}';
+   insert into portfolio_holdings(user_id,institution,asset_type,symbol,name,quantity,average_purchase_price,purchase_currency,original_investment_krw)
+   values('${b}','업비트','crypto','KRW-BTC','manual',1,0,'KRW',0);`);
+  await db.exec('reset role');
+  await db.exec(await readFile(new URL('../supabase/migrations/20261018071958_exclude_account_dust.sql',import.meta.url),'utf8'));
+  await db.exec('set role service_role');
+  assert.equal((await db.query('select * from portfolio_holdings where connection_id is not null and original_investment_krw < 1')).rows.length,0);
+  assert.equal((await db.query('select * from portfolio_holdings where user_id=$1',[b])).rows.length,1);
+  const commit=async(cost:string)=>db.query('select portfolio_commit_account($1,$2,$3,false)',[a,'kiwoom',JSON.stringify([{...positions[0],original_investment_krw:cost}])]);
+  await commit('0.999999999999');assert.equal((await db.query('select * from portfolio_holdings where user_id=$1',[a])).rows.length,0);
+  await commit('1');assert.equal((await db.query('select * from portfolio_holdings where user_id=$1',[a])).rows.length,1);
+  await commit('0');assert.equal((await db.query('select * from portfolio_holdings where user_id=$1',[a])).rows.length,0);
+  await commit('40000');await db.query('delete from portfolio_holdings where user_id=$1',[b]);
   const broken=[{...positions[0],quantity:'-1'}];
   await assert.rejects(()=>db.query('select portfolio_commit_account($1,$2,$3,false)',[a,'kiwoom',JSON.stringify(broken)]));
   assert.equal((await db.query<{quantity:string}>('select quantity::text from portfolio_holdings')).rows[0]?.quantity,'2');

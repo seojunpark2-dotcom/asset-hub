@@ -264,7 +264,8 @@ internal class BrokerSnapshot(private val network: Network?, private val access:
         val r = rows.getJSONObject(i); val currency = r.getString("currency"); if (currency == "KRW") continue
         val qty = amount(r.getString("balance")) + amount(r.getString("locked")); if (qty.signum() == 0) continue
         require(currency.matches(Regex("[A-Z0-9]{2,15}")) && r.getString("unit_currency") == "KRW" && seen.add(currency)) { "지원하지 않는 코인 잔고" }
-        result.put(position("KRW-$currency", names["KRW-$currency"] ?: currency, "crypto", qty, qty * amount(r.getString("avg_buy_price"))))
+        val cost = qty * amount(r.getString("avg_buy_price"))
+        if (cost >= BigDecimal.ONE) result.put(position("KRW-$currency", names["KRW-$currency"] ?: currency, "crypto", qty, cost))
       }
       require(result.length() <= 49); return result
     }
@@ -278,8 +279,9 @@ internal class BrokerSnapshot(private val network: Network?, private val access:
         val lot = merged.getOrPut(symbol) { Lot(BigDecimal.ZERO, BigDecimal.ZERO, r.getString("stk_nm")) }
         lot.qty += qty; lot.cost += amount(r.getString("pur_amt"))
       }
-      require(merged.size <= 49)
-      return JSONArray().apply { merged.forEach { (s,p) -> put(position(s, p.name, if (s in etfs) "domestic_etf" else "domestic_stock", p.qty, p.cost)) } }
+      val kept = merged.filterValues { it.cost >= BigDecimal.ONE }
+      require(kept.size <= 49)
+      return JSONArray().apply { kept.forEach { (s,p) -> put(position(s, p.name, if (s in etfs) "domestic_etf" else "domestic_stock", p.qty, p.cost)) } }
     }
   }
   fun fetch(provider: String): JSONArray {

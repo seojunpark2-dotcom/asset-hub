@@ -33,7 +33,8 @@ export function normalizeUpbit(data:unknown,names:Map<string,string>=new Map()):
   const qty=amount(row.balance).add(amount(row.locked));if(qty.isZero())continue;
   if(row.unit_currency!=='KRW'||!/^[A-Z0-9]{2,15}$/.test(row.currency))throw new AccountError('UNSUPPORTED_ASSET');
   const symbol='KRW-'+row.currency;if(seen.has(symbol))throw new AccountError('INVALID_BALANCE');seen.add(symbol);
-  result.push(position(symbol,names.get(symbol)??row.currency,'crypto',qty,qty.mul(amount(row.avg_buy_price))));
+  const cost=qty.mul(amount(row.avg_buy_price));
+  if(cost.gte(1))result.push(position(symbol,names.get(symbol)??row.currency,'crypto',qty,cost));
  }
  if(result.length>49)throw new AccountError('TOO_MANY_ASSETS');return result;
 }
@@ -47,8 +48,9 @@ export function normalizeKiwoom(rows:unknown,etfs:Set<string>):Position[]{
   const old=merged.get(symbol);const cost=amount(row.pur_amt);
   merged.set(symbol,{qty:(old?.qty??new Decimal(0)).add(qty),cost:(old?.cost??new Decimal(0)).add(cost),name:String(row.stk_nm??'')});
  }
- if(merged.size>49)throw new AccountError('TOO_MANY_ASSETS');
- return [...merged].map(([symbol,p])=>position(symbol,p.name,etfs.has(symbol)?'domestic_etf':'domestic_stock',p.qty,p.cost));
+ const kept=[...merged].filter(([,p])=>p.cost.gte(1));
+ if(kept.length>49)throw new AccountError('TOO_MANY_ASSETS');
+ return kept.map(([symbol,p])=>position(symbol,p.name,etfs.has(symbol)?'domestic_etf':'domestic_stock',p.qty,p.cost));
 }
 export class AccountAdapters {
  private env:Record<string,string|undefined>;private http:Fetch;

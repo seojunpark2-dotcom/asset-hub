@@ -2,13 +2,13 @@
   "expo": {
     "name": "통합 자산관리",
     "slug": "asset-hub",
-    "version": "1.15.0",
+    "version": "1.16.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "assethub",
     "android": {
       "package": "com.portfolio.assettracker",
-      "versionCode": 25,
+      "versionCode": 26,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
